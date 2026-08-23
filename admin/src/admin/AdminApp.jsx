@@ -409,33 +409,30 @@ export default function AdminApp() {
          */
         if (!currentArticle) {
 
-            const path =
-                createArticlePath(
-                    metadata.title
-                );
+    const path =
+        createArticlePath(
+            metadata.title
+        );
 
+    const result =
+        await createArticle(
+            path,
+            markdown,
+            `Create article: ${metadata.title}`
+        );
 
-            const result =
-                await createArticle(
-                    path,
-                    markdown,
-                    `Create article: ${metadata.title}`
-                );
+    setCurrentArticle({
+        path,
+        name: path.split("/").pop(),
+        sha: result.content.sha
+    });
 
+    await loadArticles();
 
-            setCurrentArticle({
-                path,
-                name: path.split("/").pop(),
-                sha: result.content.sha
-            });
+    setStatus("Создано ✓");
 
-
-            await loadArticles();
-
-            setStatus("Создано ✓");
-
-            return;
-        }
+    return;
+}
 
 
         /*
@@ -492,89 +489,47 @@ export default function AdminApp() {
     async function handleDelete() {
 
     if (!currentArticle?.path) {
-
-        setStatus(
-            "Статья не выбрана"
-        );
-
+        setStatus("Статья не выбрана");
         return;
     }
-
 
     const title =
         metadata.title ||
         currentArticle.name;
 
-
-    if (
-        !window.confirm(
-            `Удалить "${title}"?`
-        )
-    ) {
-
+    if (!window.confirm(`Удалить "${title}"?`)) {
         return;
-
     }
-
 
     try {
 
-        setStatus(
-            "Удаление..."
-        );
-
-
-        console.log(
-            "Deleting article:",
-            {
-                path:
-                    currentArticle.path,
-
-                sha:
-                    currentArticle.sha
-            }
-        );
-
+        setStatus("Удаление...");
 
         await deleteArticle(
-    currentArticle.path,
-    `Delete article: ${title}`
-);
-
+            currentArticle.path,
+            `Delete article: ${title}`
+        );
 
         setCurrentArticle(null);
-
 
         setMetadata({
             ...EMPTY_FRONT_MATTER
         });
 
-
         editor?.commands.clearContent();
-
 
         await loadArticles();
 
-
-        setStatus(
-            "Удалено ✓"
-        );
-
+        setStatus("Удалено ✓");
 
     } catch (error) {
 
-        console.error(
-            "Delete error:",
-            error
-        );
-
+        console.error(error);
 
         setStatus(
             `Ошибка: ${error.message}`
         );
-
     }
-
 }
 
 

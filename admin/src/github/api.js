@@ -50,15 +50,15 @@ function encodePath(path) {
 export async function getArticles() {
 
     const response =
-        await fetch(
-            `${GITHUB_API}/repos/` +
-            `${REPO_OWNER}/${REPO_NAME}/contents/_posts` +
-            `?ref=${REPO_BRANCH}`,
-            {
-                headers:
-                    headers()
-            }
-        );
+    await fetch(
+        `${GITHUB_API}/repos/` +
+        `${REPO_OWNER}/${REPO_NAME}/contents/_posts` +
+        `?ref=${REPO_BRANCH}`,
+        {
+            headers: headers(),
+            cache: "no-store"
+        }
+    );
 
 
     if (!response.ok) {

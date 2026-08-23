@@ -12,7 +12,7 @@ const REPO_NAME =
     "My-articles";
 
 const REPO_BRANCH =
-    "main";
+    "own_redactor";
 
 
 const TOKEN_KEY =
