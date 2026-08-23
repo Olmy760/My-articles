@@ -5,7 +5,7 @@ date: 2026-08-24
 ---
 
 ![](https://raw.githubusercontent.com/Olmy760/My-articles/own_redactor/static/images/1787495828287-gjldulj2.png)<div autoplay="true" data-type="image-slider" class="article-image-slider">
-<img src="https://raw.githubusercontent.com/Olmy760/My-articles/own_redactor/static/images/1787495839090-xbm9uwb7.jpg" alt="" data-align="center"><img src="https://raw.githubusercontent.com/Olmy760/My-articles/own_redactor/static/images/1787495841157-9a95xi1q.png" alt="" data-align="center">
+<figure data-align="center" class="image-figure align-center"><img src="https://raw.githubusercontent.com/Olmy760/My-articles/own_redactor/static/images/1787495839090-xbm9uwb7.jpg" alt="" title=""></figure><figure data-align="center" class="image-figure align-center"><img src="https://raw.githubusercontent.com/Olmy760/My-articles/own_redactor/static/images/1787495841157-9a95xi1q.png" alt="" title=""></figure>
 </div>
 
 <div data-type="video" class="article-video">
