@@ -414,3 +414,210 @@ function encodeBase64(
         binary
     );
 }
+
+export async function uploadImage(
+    file
+) {
+
+    if (!file) {
+        throw new Error(
+            "Файл изображения не выбран"
+        );
+    }
+
+
+    if (
+        !file.type.startsWith(
+            "image/"
+        )
+    ) {
+        throw new Error(
+            "Можно загружать только изображения"
+        );
+    }
+
+
+    const extension =
+        getImageExtension(
+            file
+        );
+
+
+    const filename =
+        `${Date.now()}-${randomString(8)}.${extension}`;
+
+
+    const path =
+        `static/images/${filename}`;
+
+
+    const buffer =
+        await file.arrayBuffer();
+
+
+    const bytes =
+        new Uint8Array(buffer);
+
+
+    let binary = "";
+
+
+    const chunkSize =
+        0x8000;
+
+
+    for (
+        let i = 0;
+        i < bytes.length;
+        i += chunkSize
+    ) {
+
+        binary += String.fromCharCode(
+            ...bytes.subarray(
+                i,
+                Math.min(
+                    i + chunkSize,
+                    bytes.length
+                )
+            )
+        );
+
+    }
+
+
+    const content =
+        btoa(binary);
+
+
+    const response =
+        await fetch(
+            `${GITHUB_API}/repos/` +
+            `${REPO_OWNER}/${REPO_NAME}/contents/` +
+            `${encodePath(path)}`,
+            {
+                method: "PUT",
+
+                headers:
+                    headers(),
+
+                body:
+                    JSON.stringify({
+                        message:
+                            `Upload image: ${filename}`,
+
+                        content,
+
+                        branch:
+                            REPO_BRANCH
+                    })
+            }
+        );
+
+
+    if (!response.ok) {
+
+        throw new Error(
+            `GitHub ${response.status}: ` +
+            await response.text()
+        );
+
+    }
+
+
+    return {
+        path,
+
+        url:
+            `/${path}`,
+
+        filename
+    };
+}
+
+
+function getImageExtension(
+    file
+) {
+
+    const extension =
+        file.name
+            .split(".")
+            .pop()
+            ?.toLowerCase();
+
+
+    const allowed = [
+        "png",
+        "jpg",
+        "jpeg",
+        "gif",
+        "webp",
+        "avif"
+    ];
+
+
+    if (
+        allowed.includes(
+            extension
+        )
+    ) {
+        return extension;
+    }
+
+
+    const mimeMap = {
+        "image/png": "png",
+        "image/jpeg": "jpg",
+        "image/gif": "gif",
+        "image/webp": "webp",
+        "image/avif": "avif"
+    };
+
+
+    const mapped =
+        mimeMap[file.type];
+
+
+    if (!mapped) {
+
+        throw new Error(
+            "Неподдерживаемый формат изображения"
+        );
+
+    }
+
+
+    return mapped;
+}
+
+
+function randomString(
+    length
+) {
+
+    const chars =
+        "abcdefghijklmnopqrstuvwxyz0123456789";
+
+
+    let result = "";
+
+
+    for (
+        let i = 0;
+        i < length;
+        i++
+    ) {
+
+        result +=
+            chars[
+                Math.floor(
+                    Math.random() *
+                    chars.length
+                )
+            ];
+
+    }
+
+
+    return result;
+}

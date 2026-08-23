@@ -6,10 +6,16 @@
   },
   "dependencies": {
     "@tiptap/extension-image": "^3.0.0",
-    "@tiptap/extension-link": "^3.0.0",
+    "@tiptap/extension-link": "^3.30.2",
     "@tiptap/extension-placeholder": "^3.0.0",
+    "@tiptap/extension-underline": "^3.30.2",
     "@tiptap/react": "^3.0.0",
     "@tiptap/starter-kit": "^3.0.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
     "tiptap-markdown": "^0.8.0"
+  },
+  "devDependencies": {
+    "vite": "^8.2.2"
   }
 }

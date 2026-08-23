@@ -558,3 +558,131 @@
     }
 
 }
+
+.editor-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 14px;
+    border-bottom: 1px solid #e5e7eb;
+    background: #ffffff;
+    position: sticky;
+    top: 0;
+    z-index: 20;
+}
+
+.editor-toolbar button,
+.editor-bubble-toolbar button {
+    border: 0;
+    background: transparent;
+    border-radius: 7px;
+    padding: 7px 9px;
+    cursor: pointer;
+    font-size: 13px;
+}
+
+.editor-toolbar button:hover,
+.editor-bubble-toolbar button:hover {
+    background: #f1f3f5;
+}
+
+.editor-toolbar button.active,
+.editor-bubble-toolbar button.active {
+    background: #e5e7eb;
+}
+
+.toolbar-divider {
+    width: 1px;
+    height: 22px;
+    background: #e5e7eb;
+    margin: 0 4px;
+}
+
+
+.editor-bubble-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 5px;
+    background: #202124;
+    border-radius: 9px;
+    box-shadow:
+        0 8px 30px rgba(
+            0,
+            0,
+            0,
+            0.2
+        );
+}
+
+
+.editor-bubble-toolbar button {
+    color: white;
+}
+
+
+.editor-bubble-toolbar button:hover {
+    background: #3c4043;
+}
+
+
+.tiptap-editor img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+}
+
+
+.article-video {
+    width: 100%;
+    margin: 24px 0;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    border-radius: 10px;
+    background: #000;
+}
+
+
+.article-video iframe {
+    width: 100%;
+    height: 100%;
+    border: 0;
+}
+
+
+.article-image-slider {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    padding: 8px 0 16px;
+    scroll-snap-type: x mandatory;
+}
+
+
+.article-image-slider img {
+    flex: 0 0 80%;
+    max-width: 80%;
+    object-fit: cover;
+    scroll-snap-align: center;
+}
+
+
+.ProseMirror
+    [data-type="video"] {
+    position: relative;
+    cursor: pointer;
+}
+
+
+.ProseMirror
+    [data-type="image-slider"] {
+    border: 1px dashed #d1d5db;
+    padding: 10px;
+    border-radius: 10px;
+}
+
+
+.ProseMirror
+    [data-type="video"]:hover {
+    outline: 2px solid #d1d5db;
+}

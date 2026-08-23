@@ -1,3 +1,21 @@
+import Image
+    from "@tiptap/extension-image";
+
+import Link
+    from "@tiptap/extension-link";
+
+import { VideoNode }
+    from "../editor/VideoNode";
+
+import { SliderNode }
+    from "../editor/SliderNode";
+
+import EditorToolbar
+    from "../editor/EditorToolbar";
+
+import BubbleToolbar
+    from "../editor/BubbleToolbar";
+
 import React, {
     useEffect,
     useState
@@ -14,7 +32,8 @@ import {
     getArticleContent,
     createArticle,
     updateArticle,
-    deleteArticle
+    deleteArticle,
+    uploadImage
 } from "../github/api";
 
 import {
@@ -24,9 +43,6 @@ import {
 
 import StarterKit
     from "@tiptap/starter-kit";
-
-import Image
-    from "@tiptap/extension-image";
 
 import Placeholder
     from "@tiptap/extension-placeholder";
@@ -78,33 +94,101 @@ export default function AdminApp() {
 
             extensions: [
 
-                StarterKit,
+    StarterKit,
 
-                Image,
+    Image.configure({
+        allowBase64: false
+    }),
 
-                Placeholder.configure({
-                    placeholder:
-                        "Начните писать..."
-                }),
+    Link.configure({
+        openOnClick: false,
+        autolink: true,
+        linkOnPaste: true
+    }),
 
-                Markdown.configure({
-                    html: true,
-                    transformPastedText: true,
-                    transformCopiedText: true
-                })
+    VideoNode,
 
-            ],
+    SliderNode,
+
+    Placeholder.configure({
+        placeholder:
+            "Начните писать..."
+    }),
+
+    Markdown.configure({
+        html: true,
+        transformPastedText: true,
+        transformCopiedText: true
+    })
+],
 
             content: "",
 
             editorProps: {
 
-                attributes: {
-                    class:
-                        "tiptap-editor"
-                }
+    attributes: {
+        class:
+            "tiptap-editor"
+    },
 
-            }
+    handlePaste(
+        view,
+        event
+    ) {
+
+        const clipboard =
+            event.clipboardData;
+
+        if (!clipboard) {
+            return false;
+        }
+
+
+        const image =
+            Array.from(
+                clipboard.files
+            ).find(
+                file =>
+                    file.type.startsWith(
+                        "image/"
+                    )
+            );
+
+
+        if (!image) {
+            return false;
+        }
+
+
+        uploadImage(image)
+            .then(result => {
+
+                editor
+                    ?.chain()
+                    .focus()
+                    .setImage({
+                        src:
+                            result.url
+                    })
+                    .run();
+
+            })
+            .catch(error => {
+
+                console.error(
+                    error
+                );
+
+                setStatus(
+                    `Ошибка загрузки изображения: ${error.message}`
+                );
+
+            });
+
+
+        return true;
+    }
+}
 
         });
 
@@ -947,10 +1031,22 @@ export default function AdminApp() {
 
                 <section className="admin-editor">
 
+                    <EditorToolbar
+                        editor={editor}
+                        onImage={insertImage}
+                        onSlider={insertSlider}
+                        onVideo={insertVideo}
+                    />
+
+
                     <EditorContent
                         editor={
                             editor
                         }
+                    />
+
+                    <BubbleToolbar
+                        editor={editor}
                     />
 
                 </section>
@@ -1294,4 +1390,156 @@ function today() {
         `${year}-${month}-${day}`
     );
 
+}
+
+async function insertImage() {
+
+    const input =
+        document.createElement(
+            "input"
+        );
+
+    input.type = "file";
+
+    input.accept =
+        "image/png,image/jpeg,image/gif,image/webp,image/avif";
+
+
+    input.onchange =
+        async () => {
+
+            const file =
+                input.files?.[0];
+
+            if (!file) {
+                return;
+            }
+
+
+            try {
+
+                setStatus(
+                    "Загрузка изображения..."
+                );
+
+
+                const result =
+                    await uploadImage(
+                        file
+                    );
+
+
+                editor
+                    ?.chain()
+                    .focus()
+                    .setImage({
+                        src:
+                            result.url
+                    })
+                    .run();
+
+
+                setStatus(
+                    "Изображение добавлено ✓"
+                );
+
+            } catch (error) {
+
+                console.error(
+                    error
+                );
+
+                setStatus(
+                    `Ошибка: ${error.message}`
+                );
+            }
+        };
+
+
+    input.click();
+}
+
+function insertVideo() {
+
+    const url =
+        window.prompt(
+            "Вставьте ссылку на YouTube, VK Видео или Rutube:"
+        );
+
+
+    if (!url) {
+        return;
+    }
+
+
+    const inserted =
+        editor
+            ?.chain()
+            .focus()
+            .setVideo(url)
+            .run();
+
+
+    if (!inserted) {
+
+        setStatus(
+            "Не удалось определить видеосервис"
+        );
+
+        return;
+    }
+
+
+    setStatus(
+        "Видео добавлено ✓"
+    );
+}
+
+async function insertSlider() {
+
+    const urls =
+        window.prompt(
+            "Вставьте URL изображений через запятую:"
+        );
+
+
+    if (!urls) {
+        return;
+    }
+
+
+    const images =
+        urls
+            .split(",")
+            .map(
+                url =>
+                    url.trim()
+            )
+            .filter(Boolean)
+            .map(
+                src => ({
+                    src
+                })
+            );
+
+
+    if (
+        images.length < 2
+    ) {
+
+        setStatus(
+            "Для слайдера нужно минимум 2 изображения"
+        );
+
+        return;
+    }
+
+
+    editor
+        ?.chain()
+        .focus()
+        .setImageSlider(
+            images
+        )
+        .run();
 }
