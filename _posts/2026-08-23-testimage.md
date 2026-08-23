@@ -7,13 +7,13 @@ title: "TestImage"
 </div>
 
 <div data-type="video" class="article-video">
-<iframe src="https://www.youtube.com/embed/SLVHLKU4tHo" frameborder="0" allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowfullscreen="true"></iframe>
+<iframe data-src="https://www.youtube.com/watch?v=SLVHLKU4tHo" src="https://www.youtube.com/embed/SLVHLKU4tHo" frameborder="0" allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowfullscreen="true"></iframe>
 </div>
 
 <div data-type="video" class="article-video">
-<iframe src="https://vkvideo.ru/video-226111813_456239383?showAutoLoginModal=1" frameborder="0" allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowfullscreen="true"></iframe>
+<iframe data-src="https://rutube.ru/video/f78c1e10eebad08243df8baadf4631a5/" src="https://rutube.ru/play/embed/f78c1e10eebad08243df8baadf4631a5" frameborder="0" allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowfullscreen="true"></iframe>
 </div>
 
 <div data-type="video" class="article-video">
-<iframe src="https://rutube.ru/play/embed/f78c1e10eebad08243df8baadf4631a5" frameborder="0" allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowfullscreen="true"></iframe>
+<iframe data-src="https://vkvideo.ru/video-226111813_456239383" src="https://vkvideo.ru/video-226111813_456239383" frameborder="0" allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowfullscreen="true"></iframe>
 </div>
