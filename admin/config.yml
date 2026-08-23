@@ -4,6 +4,7 @@ backend:
   branch: main
   base_url: https://olmy-decap-proxy.gleb-babushkin-v.workers.dev
   auth_endpoint: /auth
+  proxy_url: https://olmy-decap-proxy.gleb-babushkin-v.workers.dev
 
 media_folder: "static/images/uploads"
 public_folder: "/images/uploads"
