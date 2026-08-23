@@ -1,0 +1,21 @@
+backend:
+  name: github
+  repo: Olmy760/my-articles
+  branch: main
+  base_url: https://olmy-decap-proxy.gleb-babushkin-v.workers.dev
+
+media_folder: "static/images/uploads"
+public_folder: "/images/uploads"
+
+collections:
+  - name: "articles"
+    label: "Статьи"
+    folder: "_posts"
+    create: true
+    slug: "{{year}}-{{month}}-{{day}}-{{slug}}"
+    fields:
+      - { label: "Заголовок", name: "title", widget: "string" }
+      - { label: "Дата", name: "date", widget: "datetime" }
+      - { label: "Описание", name: "description", widget: "text" }
+      - { label: "Теги", name: "tags", widget: "list", default: ["post"] }
+      - { label: "Содержание", name: "body", widget: "markdown" }
