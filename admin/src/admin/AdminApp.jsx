@@ -53,7 +53,6 @@ import {
 
 import "./admin.css";
 
-
 const EMPTY_FRONT_MATTER = {
     title: "",
     description: "",
@@ -68,6 +67,8 @@ export default function AdminApp() {
 
     const [user, setUser] =
         useState(null);
+
+    const [saving, setSaving] = useState(false);
 
     const [authLoading, setAuthLoading] =
         useState(true);
@@ -601,8 +602,16 @@ function insertVideo() {
         });
 
         editor.commands.setContent(
-            parsed.content
-        );
+    parsed.content,
+    {
+        emitUpdate: false
+    }
+);
+
+console.log(
+    "Loaded editor JSON:",
+    editor.getJSON()
+);
 
         setCurrentArticle({
             path: article.path,
@@ -666,6 +675,10 @@ function insertVideo() {
         return;
     }
 
+    if (saving) {
+        return;
+    }
+
     if (!metadata.title.trim()) {
         setStatus("Введите название");
         return;
@@ -673,8 +686,9 @@ function insertVideo() {
 
     try {
 
-        setStatus("Сохранение...");
+        setSaving(true);
 
+        setStatus("Сохранение...");
 
         const markdown =
             buildMarkdown(
@@ -683,67 +697,76 @@ function insertVideo() {
             );
 
 
-        /*
-         * Новая статья
-         */
+        /* =========================================
+           НОВАЯ СТАТЬЯ
+           ========================================= */
+
         if (!currentArticle) {
 
-    const path =
-        createArticlePath(
-            metadata.title
-        );
-
-    const result =
-        await createArticle(
-            path,
-            markdown,
-            `Create article: ${metadata.title}`
-        );
-
-    setCurrentArticle({
-        path,
-        name: path.split("/").pop(),
-        sha: result.content.sha
-    });
-
-    await loadArticles();
-
-    setStatus("Создано ✓");
-
-    return;
-}
+            const path =
+                createArticlePath(
+                    metadata.title
+                );
 
 
-        /*
-         * Существующая статья
-         */
+            const result =
+                await createArticle(
+                    path,
+                    markdown,
+                    `Create article: ${metadata.title}`
+                );
 
-        if (!currentArticle.sha) {
 
-            throw new Error(
-                "У статьи отсутствует GitHub SHA. " +
-                "Откройте статью заново."
-            );
+            setCurrentArticle({
+                path,
+                name:
+                    path.split("/").pop(),
+                sha:
+                    result.content.sha
+            });
 
+
+            await loadArticles();
+
+
+            setStatus("Создано ✓");
+
+            return;
         }
 
 
-        const result =
-    await updateArticle(
-        currentArticle.path,
-        markdown,
-        currentArticle.sha,
-        `Update article: ${metadata.title}`
-    );
+        /* =========================================
+           СУЩЕСТВУЮЩАЯ СТАТЬЯ
+           ========================================= */
 
+        const result =
+            await updateArticle(
+                currentArticle.path,
+                markdown,
+                `Update article: ${metadata.title}`
+            );
+
+
+        /*
+         * Обновляем SHA в состоянии.
+         *
+         * Это полезно для текущей сессии,
+         * хотя updateArticle() сам получает
+         * свежий SHA из GitHub.
+         */
 
         setCurrentArticle(
             previous => ({
                 ...previous,
-                sha: result.content.sha
+                sha:
+                    result.content.sha
             })
         );
 
+
+        /*
+         * Обновляем список статей слева.
+         */
 
         await loadArticles();
 
@@ -757,6 +780,10 @@ function insertVideo() {
         setStatus(
             `Ошибка: ${error.message}`
         );
+
+    } finally {
+
+        setSaving(false);
 
     }
 }
@@ -1085,13 +1112,12 @@ function insertVideo() {
 
 
                         <button
-                            className="save-button"
-                            onClick={
-                                saveArticle
-                            }
-                        >
-                            Сохранить
-                        </button>
+    className="save-button"
+    onClick={saveArticle}
+    disabled={saving}
+>
+    {saving ? "Сохранение..." : "Сохранить"}
+</button>
 
 
                     </div>
