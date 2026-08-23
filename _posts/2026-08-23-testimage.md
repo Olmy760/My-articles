@@ -13,11 +13,3 @@ title: "TestImage"
 <div data-type="video" class="article-video">
 <iframe data-src="https://rutube.ru/video/f78c1e10eebad08243df8baadf4631a5/" src="https://rutube.ru/play/embed/f78c1e10eebad08243df8baadf4631a5" frameborder="0" allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowfullscreen="true"></iframe>
 </div>
-
-<div data-type="video" class="article-video">
-<iframe data-src="https://vkvideo.ru/video-226111813_456239383" src="https://vk.com/video_ext.php?oid=-226111813&amp;id=456239383" frameborder="0" allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowfullscreen="true"></iframe>
-</div>
-
-<div data-type="video" class="article-video">
-<iframe data-src="https://vkvideo.ru/video-226111813_456239383" src="https://vk.com/video_ext.php?oid=-226111813&amp;id=456239383" frameborder="0" allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowfullscreen="true"></iframe>
-</div>
