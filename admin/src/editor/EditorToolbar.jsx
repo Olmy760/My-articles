@@ -1,199 +1,212 @@
 import React from "react";
 
-
 export default function EditorToolbar({
     editor,
     onImage,
     onSlider,
     onVideo
 }) {
-
     if (!editor) {
         return null;
     }
 
-
-    function button(
-        label,
-        action,
-        active = false
-    ) {
-
-        return (
-            <button
-                type="button"
-                className={
-                    active
-                        ? "active"
-                        : ""
-                }
-                onMouseDown={event => {
-
-                    event.preventDefault();
-
-                    action();
-                }}
-            >
-                {label}
-            </button>
-        );
-    }
-
+    const run = (callback) => {
+        callback();
+        editor.commands.focus();
+    };
 
     return (
         <div className="editor-toolbar">
 
-            {button(
-                "H1",
-                () =>
+            <button
+                type="button"
+                className={editor.isActive("bold") ? "active" : ""}
+                onMouseDown={(event) => {
+                    event.preventDefault();
+
+                    editor
+                        .chain()
+                        .focus()
+                        .toggleBold()
+                        .run();
+                }}
+            >
+                <strong>B</strong>
+            </button>
+
+            <button
+                type="button"
+                className={editor.isActive("italic") ? "active" : ""}
+                onMouseDown={(event) => {
+                    event.preventDefault();
+
+                    editor
+                        .chain()
+                        .focus()
+                        .toggleItalic()
+                        .run();
+                }}
+            >
+                <em>I</em>
+            </button>
+
+            <button
+                type="button"
+                className={editor.isActive("strike") ? "active" : ""}
+                onMouseDown={(event) => {
+                    event.preventDefault();
+
+                    editor
+                        .chain()
+                        .focus()
+                        .toggleStrike()
+                        .run();
+                }}
+            >
+                <s>S</s>
+            </button>
+
+            <button
+                type="button"
+                className={editor.isActive("underline") ? "active" : ""}
+                onMouseDown={(event) => {
+                    event.preventDefault();
+
+                    editor
+                        .chain()
+                        .focus()
+                        .toggleUnderline()
+                        .run();
+                }}
+            >
+                <u>U</u>
+            </button>
+
+            <span className="toolbar-divider" />
+
+            <button
+                type="button"
+                className={
+                    editor.isActive("heading", {
+                        level: 1
+                    })
+                        ? "active"
+                        : ""
+                }
+                onMouseDown={(event) => {
+                    event.preventDefault();
+
                     editor
                         .chain()
                         .focus()
                         .toggleHeading({
                             level: 1
                         })
-                        .run(),
+                        .run();
+                }}
+            >
+                H1
+            </button>
 
-                editor.isActive(
-                    "heading",
-                    { level: 1 }
-                )
-            )}
+            <button
+                type="button"
+                className={
+                    editor.isActive("heading", {
+                        level: 2
+                    })
+                        ? "active"
+                        : ""
+                }
+                onMouseDown={(event) => {
+                    event.preventDefault();
 
-
-            {button(
-                "H2",
-                () =>
                     editor
                         .chain()
                         .focus()
                         .toggleHeading({
                             level: 2
                         })
-                        .run(),
-
-                editor.isActive(
-                    "heading",
-                    { level: 2 }
-                )
-            )}
-
+                        .run();
+                }}
+            >
+                H2
+            </button>
 
             <span className="toolbar-divider" />
 
+            <button
+                type="button"
+                className={
+                    editor.isActive("bulletList")
+                        ? "active"
+                        : ""
+                }
+                onMouseDown={(event) => {
+                    event.preventDefault();
 
-            {button(
-                "• Список",
-                () =>
                     editor
                         .chain()
                         .focus()
                         .toggleBulletList()
-                        .run(),
+                        .run();
+                }}
+            >
+                • List
+            </button>
 
-                editor.isActive(
-                    "bulletList"
-                )
-            )}
+            <button
+                type="button"
+                className={
+                    editor.isActive("orderedList")
+                        ? "active"
+                        : ""
+                }
+                onMouseDown={(event) => {
+                    event.preventDefault();
 
-
-            {button(
-                "1. Список",
-                () =>
                     editor
                         .chain()
                         .focus()
                         .toggleOrderedList()
-                        .run(),
+                        .run();
+                }}
+            >
+                1. List
+            </button>
 
-                editor.isActive(
-                    "orderedList"
-                )
-            )}
+            <button
+                type="button"
+                className={
+                    editor.isActive("blockquote")
+                        ? "active"
+                        : ""
+                }
+                onMouseDown={(event) => {
+                    event.preventDefault();
 
-
-            {button(
-                "❝ Цитата",
-                () =>
                     editor
                         .chain()
                         .focus()
                         .toggleBlockquote()
-                        .run(),
-
-                editor.isActive(
-                    "blockquote"
-                )
-            )}
-
+                        .run();
+                }}
+            >
+                ❝
+            </button>
 
             <span className="toolbar-divider" />
 
-
             <button
                 type="button"
-                onMouseDown={event => {
-                    event.preventDefault();
-                    onImage();
-                }}
-            >
-                🖼 Изображение
-            </button>
-
-
-            <button
-                type="button"
-                onMouseDown={event => {
-                    event.preventDefault();
-                    onSlider();
-                }}
-            >
-                ▣ Слайдер
-            </button>
-
-
-            <button
-                type="button"
-                onMouseDown={event => {
-                    event.preventDefault();
-                    onVideo();
-                }}
-            >
-                ▶ Видео
-            </button>
-
-
-            <button
-                type="button"
-                onMouseDown={event => {
-
+                onMouseDown={(event) => {
                     event.preventDefault();
 
-                    const previousUrl =
-                        editor.getAttributes(
-                            "link"
-                        ).href;
-
-                    const url =
+                    const href =
                         window.prompt(
-                            "URL ссылки:",
-                            previousUrl || ""
+                            "URL ссылки:"
                         );
 
-                    if (
-                        url === null
-                    ) {
-                        return;
-                    }
-
-                    if (!url) {
-
-                        editor
-                            .chain()
-                            .focus()
-                            .unsetLink()
-                            .run();
-
+                    if (!href) {
                         return;
                     }
 
@@ -201,12 +214,45 @@ export default function EditorToolbar({
                         .chain()
                         .focus()
                         .setLink({
-                            href: url
+                            href
                         })
                         .run();
                 }}
             >
-                🔗 Ссылка
+                🔗
+            </button>
+
+            <button
+                type="button"
+                onMouseDown={(event) => {
+                    event.preventDefault();
+
+                    onImage();
+                }}
+            >
+                🖼
+            </button>
+
+            <button
+                type="button"
+                onMouseDown={(event) => {
+                    event.preventDefault();
+
+                    onSlider();
+                }}
+            >
+                ▣
+            </button>
+
+            <button
+                type="button"
+                onMouseDown={(event) => {
+                    event.preventDefault();
+
+                    onVideo();
+                }}
+            >
+                ▶
             </button>
 
         </div>

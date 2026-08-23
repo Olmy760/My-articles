@@ -1,6 +1,9 @@
 import Image
     from "@tiptap/extension-image";
 
+import Underline
+    from "@tiptap/extension-underline";
+
 import Link
     from "@tiptap/extension-link";
 
@@ -12,9 +15,6 @@ import { SliderNode }
 
 import EditorToolbar
     from "../editor/EditorToolbar";
-
-import BubbleToolbar
-    from "../editor/BubbleToolbar";
 
 import React, {
     useEffect,
@@ -96,6 +96,8 @@ export default function AdminApp() {
 
     StarterKit,
 
+    Underline,
+
     Image.configure({
         allowBase64: false
     }),
@@ -132,62 +134,53 @@ export default function AdminApp() {
     },
 
     handlePaste(
-        view,
-        event
-    ) {
+    view,
+    event
+) {
 
-        const clipboard =
-            event.clipboardData;
+    const files =
+        Array.from(
+            event.clipboardData?.files || []
+        );
 
-        if (!clipboard) {
-            return false;
-        }
+    const image =
+        files.find(
+            file =>
+                file.type.startsWith(
+                    "image/"
+                )
+        );
 
-
-        const image =
-            Array.from(
-                clipboard.files
-            ).find(
-                file =>
-                    file.type.startsWith(
-                        "image/"
-                    )
-            );
-
-
-        if (!image) {
-            return false;
-        }
-
-
-        uploadImage(image)
-            .then(result => {
-
-                editor
-                    ?.chain()
-                    .focus()
-                    .setImage({
-                        src:
-                            result.url
-                    })
-                    .run();
-
-            })
-            .catch(error => {
-
-                console.error(
-                    error
-                );
-
-                setStatus(
-                    `Ошибка загрузки изображения: ${error.message}`
-                );
-
-            });
-
-
-        return true;
+    if (!image) {
+        return false;
     }
+
+    uploadImage(image)
+        .then(result => {
+
+            editor
+                ?.chain()
+                .focus()
+                .setImage({
+                    src:
+                        getImageUrl(
+                            result.path
+                        )
+                })
+                .run();
+
+        })
+        .catch(error => {
+
+            console.error(error);
+
+            setStatus(
+                `Ошибка загрузки: ${error.message}`
+            );
+        });
+
+    return true;
+}
 }
 
         });
@@ -1045,10 +1038,6 @@ export default function AdminApp() {
                         }
                     />
 
-                    <BubbleToolbar
-                        editor={editor}
-                    />
-
                 </section>
 
 
@@ -1392,69 +1381,68 @@ function today() {
 
 }
 
+
+function getImageUrl(path) {
+
+    return (
+        `https://raw.githubusercontent.com/` +
+        `${REPO_OWNER}/${REPO_NAME}/` +
+        `${REPO_BRANCH}/${path}`
+    );
+}
+
 async function insertImage() {
 
     const input =
-        document.createElement(
-            "input"
-        );
+        document.createElement("input");
 
     input.type = "file";
 
     input.accept =
         "image/png,image/jpeg,image/gif,image/webp,image/avif";
 
+    input.onchange = async () => {
 
-    input.onchange =
-        async () => {
+        const file =
+            input.files?.[0];
 
-            const file =
-                input.files?.[0];
+        if (!file) {
+            return;
+        }
 
-            if (!file) {
-                return;
-            }
+        try {
 
+            setStatus(
+                "Загрузка изображения..."
+            );
 
-            try {
+            const result =
+                await uploadImage(file);
 
-                setStatus(
-                    "Загрузка изображения..."
-                );
+            editor
+                ?.chain()
+                .focus()
+                .setImage({
+                    src:
+                        getImageUrl(
+                            result.path
+                        )
+                })
+                .run();
 
+            setStatus(
+                "Изображение добавлено ✓"
+            );
 
-                const result =
-                    await uploadImage(
-                        file
-                    );
+        } catch (error) {
 
+            console.error(error);
 
-                editor
-                    ?.chain()
-                    .focus()
-                    .setImage({
-                        src:
-                            result.url
-                    })
-                    .run();
-
-
-                setStatus(
-                    "Изображение добавлено ✓"
-                );
-
-            } catch (error) {
-
-                console.error(
-                    error
-                );
-
-                setStatus(
-                    `Ошибка: ${error.message}`
-                );
-            }
-        };
-
+            setStatus(
+                `Ошибка: ${error.message}`
+            );
+        }
+    };
 
     input.click();
 }
@@ -1497,49 +1485,93 @@ function insertVideo() {
 
 async function insertSlider() {
 
-    const urls =
-        window.prompt(
-            "Вставьте URL изображений через запятую:"
+    const input =
+        document.createElement(
+            "input"
         );
 
+    input.type = "file";
 
-    if (!urls) {
-        return;
-    }
+    input.accept =
+        "image/png,image/jpeg,image/gif,image/webp,image/avif";
 
-
-    const images =
-        urls
-            .split(",")
-            .map(
-                url =>
-                    url.trim()
-            )
-            .filter(Boolean)
-            .map(
-                src => ({
-                    src
-                })
-            );
+    input.multiple = true;
 
 
-    if (
-        images.length < 2
-    ) {
+    input.onchange =
+        async () => {
 
-        setStatus(
-            "Для слайдера нужно минимум 2 изображения"
-        );
-
-        return;
-    }
+            const files =
+                Array.from(
+                    input.files || []
+                );
 
 
-    editor
-        ?.chain()
-        .focus()
-        .setImageSlider(
-            images
-        )
-        .run();
+            if (
+                files.length < 2
+            ) {
+
+                setStatus(
+                    "Выберите минимум 2 изображения"
+                );
+
+                return;
+            }
+
+
+            try {
+
+                setStatus(
+                    `Загрузка 0/${files.length}...`
+                );
+
+
+                const results =
+                    await uploadImages(
+                        files,
+                        (current, total) => {
+
+                            setStatus(
+                                `Загрузка ${current}/${total}...`
+                            );
+                        }
+                    );
+
+
+                const images =
+                    results.map(
+                        result => ({
+                            src:
+                                getImageUrl(
+                                    result.path
+                                )
+                        })
+                    );
+
+
+                editor
+                    ?.chain()
+                    .focus()
+                    .setImageSlider(
+                        images
+                    )
+                    .run();
+
+
+                setStatus(
+                    `Слайдер добавлен: ${images.length} изображений ✓`
+                );
+
+            } catch (error) {
+
+                console.error(error);
+
+                setStatus(
+                    `Ошибка загрузки: ${error.message}`
+                );
+            }
+        };
+
+
+    input.click();
 }
