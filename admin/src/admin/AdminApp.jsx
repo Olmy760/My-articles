@@ -18,6 +18,7 @@ import EditorToolbar
 
 import React, {
     useEffect,
+    useMemo,
     useState
 } from "react";
 
@@ -83,6 +84,10 @@ const TOPICS = [
 
 export default function AdminApp() {
 
+    /* =====================================================
+       STATE
+       ===================================================== */
+
     const [user, setUser] =
         useState(null);
 
@@ -115,6 +120,9 @@ export default function AdminApp() {
 
     const [openYears, setOpenYears] =
         useState({});
+
+    const [searchQuery, setSearchQuery] =
+        useState("");
 
 
     /* =====================================================
@@ -236,9 +244,9 @@ export default function AdminApp() {
         });
 
 
-    /* =========================================================
+    /* =====================================================
        IMAGE URL
-       ========================================================= */
+       ===================================================== */
 
     function getImageUrl(path) {
 
@@ -251,9 +259,9 @@ export default function AdminApp() {
     }
 
 
-    /* =========================================================
+    /* =====================================================
        INSERT IMAGE
-       ========================================================= */
+       ===================================================== */
 
     async function insertImage() {
 
@@ -328,9 +336,9 @@ export default function AdminApp() {
     }
 
 
-    /* =========================================================
+    /* =====================================================
        INSERT VIDEO
-       ========================================================= */
+       ===================================================== */
 
     function insertVideo() {
 
@@ -373,9 +381,9 @@ export default function AdminApp() {
     }
 
 
-    /* =========================================================
+    /* =====================================================
        INSERT SLIDER
-       ========================================================= */
+       ===================================================== */
 
     async function insertSlider() {
 
@@ -501,9 +509,9 @@ export default function AdminApp() {
     }
 
 
-    /* =========================================================
+    /* =====================================================
        AUTH
-       ========================================================= */
+       ===================================================== */
 
     useEffect(() => {
 
@@ -653,9 +661,9 @@ export default function AdminApp() {
     }
 
 
-    /* =========================================================
+    /* =====================================================
        LOAD ARTICLES
-       ========================================================= */
+       ===================================================== */
 
     async function loadArticles() {
 
@@ -687,6 +695,41 @@ export default function AdminApp() {
                 normalized
             );
 
+
+            /*
+             * Если открытая статья существует —
+             * обновляем её данные из нового списка.
+             */
+
+            setCurrentArticle(
+                previous => {
+
+                    if (!previous) {
+                        return previous;
+                    }
+
+
+                    const updated =
+                        normalized.find(
+                            article =>
+                                article.path ===
+                                previous.path
+                        );
+
+
+                    if (!updated) {
+                        return null;
+                    }
+
+
+                    return {
+                        ...previous,
+                        ...updated
+                    };
+
+                }
+            );
+
         } catch (error) {
 
             console.error(error);
@@ -704,9 +747,82 @@ export default function AdminApp() {
     }
 
 
-    /* =========================================================
+    /* =====================================================
+       FILTER ARTICLES
+       ===================================================== */
+
+    const filteredArticles =
+        useMemo(() => {
+
+            const query =
+                searchQuery
+                    .trim()
+                    .toLowerCase();
+
+
+            if (!query) {
+                return articles;
+            }
+
+
+            return articles.filter(
+                article => {
+
+                    const title =
+                        getArticleTitle(
+                            article
+                        )
+                            .toLowerCase();
+
+
+                    const topic =
+                        String(
+                            article.topic || ""
+                        )
+                            .toLowerCase();
+
+
+                    const path =
+                        String(
+                            article.path || ""
+                        )
+                            .toLowerCase();
+
+
+                    return (
+                        title.includes(query) ||
+                        topic.includes(query) ||
+                        path.includes(query)
+                    );
+
+                }
+            );
+
+        }, [
+            articles,
+            searchQuery
+        ]);
+
+
+    /* =====================================================
+       GROUPS
+       ===================================================== */
+
+    const articleGroups =
+        useMemo(
+            () =>
+                groupArticlesByTopic(
+                    filteredArticles
+                ),
+            [
+                filteredArticles
+            ]
+        );
+
+
+    /* =====================================================
        OPEN ARTICLE
-       ========================================================= */
+       ===================================================== */
 
     async function openArticle(
         article
@@ -728,12 +844,6 @@ export default function AdminApp() {
                 await getArticleContent(
                     article.path
                 );
-
-
-            console.log(
-                "GitHub file:",
-                file
-            );
 
 
             const parsed =
@@ -786,6 +896,8 @@ export default function AdminApp() {
 
             setCurrentArticle({
 
+                ...article,
+
                 path:
                     article.path,
 
@@ -815,9 +927,9 @@ export default function AdminApp() {
     }
 
 
-    /* =========================================================
+    /* =====================================================
        NEW ARTICLE
-       ========================================================= */
+       ===================================================== */
 
     function createNewArticle() {
 
@@ -849,9 +961,9 @@ export default function AdminApp() {
     }
 
 
-    /* =========================================================
+    /* =====================================================
        SAVE ARTICLE
-       ========================================================= */
+       ===================================================== */
 
     async function saveArticle() {
 
@@ -903,6 +1015,10 @@ export default function AdminApp() {
                 topic:
                     metadata.topic ||
                     "Other",
+
+                date:
+                    metadata.date ||
+                    today(),
 
                 tags:
                     Array.isArray(
@@ -1030,9 +1146,9 @@ export default function AdminApp() {
     }
 
 
-    /* =========================================================
+    /* =====================================================
        DELETE
-       ========================================================= */
+       ===================================================== */
 
     async function handleDelete() {
 
@@ -1114,9 +1230,9 @@ export default function AdminApp() {
     }
 
 
-    /* =========================================================
+    /* =====================================================
        AUTH LOADING
-       ========================================================= */
+       ===================================================== */
 
     if (authLoading) {
 
@@ -1143,9 +1259,9 @@ export default function AdminApp() {
     }
 
 
-    /* =========================================================
+    /* =====================================================
        LOGIN
-       ========================================================= */
+       ===================================================== */
 
     if (!user) {
 
@@ -1191,21 +1307,9 @@ export default function AdminApp() {
     }
 
 
-    /* =========================================================
-       GROUPS
-       ========================================================= */
-
-    const articleGroups =
-        groupArticlesByTopic(
-            Array.isArray(articles)
-                ? articles
-                : []
-        );
-
-
-    /* =========================================================
+    /* =====================================================
        ADMIN
-       ========================================================= */
+       ===================================================== */
 
     return (
 
@@ -1216,7 +1320,6 @@ export default function AdminApp() {
                ================================================= */}
 
             <aside className="admin-sidebar">
-
 
                 <div className="admin-sidebar-header">
 
@@ -1233,17 +1336,62 @@ export default function AdminApp() {
                     </div>
 
 
-                    <button
-                        className="new-article-button"
-                        onClick={
-                            createNewArticle
-                        }
-                    >
-                        +
-                    </button>
+                    <div className="admin-sidebar-actions">
+
+                        <button
+                            className="refresh-articles-button"
+                            onClick={
+                                loadArticles
+                            }
+                            disabled={
+                                loadingArticles
+                            }
+                            title="Обновить статьи"
+                        >
+                            ↻
+                        </button>
+
+
+                        <button
+                            className="new-article-button"
+                            onClick={
+                                createNewArticle
+                            }
+                            title="Новая статья"
+                        >
+                            +
+                        </button>
+
+                    </div>
 
                 </div>
 
+
+                {/* SEARCH */}
+
+                <div className="admin-search">
+
+                    <input
+                        type="search"
+
+                        value={
+                            searchQuery
+                        }
+
+                        onChange={
+                            event =>
+                                setSearchQuery(
+                                    event.target.value
+                                )
+                        }
+
+                        placeholder="Поиск статей..."
+                    />
+
+                </div>
+
+
+                {/* ARTICLES */}
 
                 <div className="admin-articles">
 
@@ -1260,14 +1408,38 @@ export default function AdminApp() {
                         articles.length === 0 && (
 
                             <div className="articles-empty">
-                                Нет статей
+
+                                <div>
+                                    Нет статей
+                                </div>
+
+                                <button
+                                    className="empty-new-button"
+                                    onClick={
+                                        createNewArticle
+                                    }
+                                >
+                                    Создать первую статью
+                                </button>
+
                             </div>
 
                         )}
 
 
                     {!loadingArticles &&
-                        articles.length > 0 && (
+                        articles.length > 0 &&
+                        filteredArticles.length === 0 && (
+
+                            <div className="articles-empty">
+                                Ничего не найдено
+                            </div>
+
+                        )}
+
+
+                    {!loadingArticles &&
+                        filteredArticles.length > 0 && (
 
                             <div className="article-tree">
 
@@ -1341,7 +1513,7 @@ export default function AdminApp() {
                                                     </span>
 
 
-                                                    <span>
+                                                    <span className="article-topic-name">
                                                         {
                                                             group.topic
                                                         }
@@ -1356,6 +1528,8 @@ export default function AdminApp() {
 
                                                 </button>
 
+
+                                                {/* YEARS */}
 
                                                 {topicOpen && (
 
@@ -1419,14 +1593,18 @@ export default function AdminApp() {
                                                                             </span>
 
 
-                                                                            <span>
-                                                                                {yearGroup.year}
+                                                                            <span className="article-year-name">
+                                                                                {
+                                                                                    yearGroup.year
+                                                                                }
                                                                             </span>
+
 
                                                                             <span className="article-count">
-                                                                                {yearGroup.articles.length}
+                                                                                {
+                                                                                    safeArticles.length
+                                                                                }
                                                                             </span>
-
 
                                                                         </button>
 
@@ -1441,7 +1619,6 @@ export default function AdminApp() {
                                                                                     article => (
 
                                                                                         <button
-
                                                                                             key={
                                                                                                 article.path
                                                                                             }
@@ -1461,7 +1638,6 @@ export default function AdminApp() {
                                                                                                     article
                                                                                                 )
                                                                                             }
-
                                                                                         >
 
                                                                                             <span className="article-date">
@@ -1711,9 +1887,7 @@ export default function AdminApp() {
                                     key={topic}
                                     value={topic}
                                 >
-
                                     {topic}
-
                                 </option>
 
                             )
@@ -2411,7 +2585,7 @@ function parseYaml(
                                         /^["']|["']$/g,
                                         ""
                                     )
-                            )
+                        )
                         .filter(
                             Boolean
                         );

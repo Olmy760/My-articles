@@ -1265,3 +1265,200 @@
     }
 
 }
+
+.admin-save-status {
+    display: flex;
+
+    align-items: center;
+
+    gap: 10px;
+}
+
+.save-status {
+    font-size: 12px;
+
+    font-weight: 500;
+
+    white-space: nowrap;
+}
+
+.save-status.dirty {
+    color: #b45309;
+}
+
+.save-status.saved {
+    color: #16803c;
+}
+
+.admin-status {
+    color: #888;
+
+    font-size: 12px;
+
+    white-space: nowrap;
+}
+
+/* =====================================================
+   SIDEBAR ACTIONS
+   ===================================================== */
+
+.admin-sidebar-actions {
+    display: flex;
+
+    align-items: center;
+
+    gap: 6px;
+}
+
+
+/* =====================================================
+   REFRESH BUTTON
+   ===================================================== */
+
+.refresh-articles-button {
+    width: 34px;
+    height: 34px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 0;
+
+    border: 1px solid #e1e1e1;
+    border-radius: 8px;
+
+    background: #fff;
+
+    color: #666;
+
+    cursor: pointer;
+
+    font-size: 16px;
+    line-height: 1;
+
+    transition:
+        background 0.15s ease,
+        border-color 0.15s ease,
+        color 0.15s ease,
+        transform 0.15s ease;
+}
+
+.refresh-articles-button:hover {
+    background: #f3f3f3;
+
+    border-color: #d5d5d5;
+
+    color: #222;
+}
+
+.refresh-articles-button:active {
+    transform: rotate(-20deg);
+}
+
+.refresh-articles-button:disabled {
+    opacity: 0.45;
+
+    cursor: default;
+}
+
+
+/* =====================================================
+   NEW ARTICLE BUTTON
+   ===================================================== */
+
+.new-article-button {
+    width: 34px;
+    height: 34px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 0;
+
+    border: 0;
+    border-radius: 8px;
+
+    background: #222;
+
+    color: #fff;
+
+    cursor: pointer;
+
+    font-size: 22px;
+    font-weight: 400;
+    line-height: 1;
+
+    transition:
+        background 0.15s ease,
+        transform 0.15s ease;
+}
+
+.new-article-button:hover {
+    background: #000;
+}
+
+.new-article-button:active {
+    transform: scale(0.95);
+}
+
+/* =====================================================
+   SEARCH
+   ===================================================== */
+
+.admin-search {
+    padding: 10px 12px 8px;
+
+    border-bottom: 1px solid #eeeeee;
+
+    background: #fafafa;
+}
+
+.admin-search input {
+    width: 100%;
+    height: 34px;
+
+    box-sizing: border-box;
+
+    padding: 0 11px;
+
+    border: 1px solid #dedede;
+    border-radius: 7px;
+
+    outline: none;
+
+    background: #fff;
+
+    color: #333;
+
+    font-family: inherit;
+    font-size: 12px;
+
+    transition:
+        border-color 0.15s ease,
+        box-shadow 0.15s ease,
+        background 0.15s ease;
+}
+
+.admin-search input::placeholder {
+    color: #aaa;
+}
+
+.admin-search input:hover {
+    border-color: #cfcfcf;
+}
+
+.admin-search input:focus {
+    border-color: #aaa;
+
+    background: #fff;
+
+    box-shadow:
+        0 0 0 2px
+        rgba(0, 0, 0, 0.04);
+}
+
+.admin-search input::-webkit-search-cancel-button {
+    cursor: pointer;
+}

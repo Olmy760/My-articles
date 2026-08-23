@@ -230,7 +230,7 @@ export default function EditorToolbar({
                     onImage();
                 }}
             >
-                🖼
+                Image
             </button>
 
             <button
@@ -241,7 +241,7 @@ export default function EditorToolbar({
                     onSlider();
                 }}
             >
-                ▣
+                Slider
             </button>
 
             <button
@@ -252,7 +252,7 @@ export default function EditorToolbar({
                     onVideo();
                 }}
             >
-                ▶
+                Video
             </button>
 
         </div>
