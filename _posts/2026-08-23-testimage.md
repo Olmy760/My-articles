@@ -1,5 +1,6 @@
 ---
 title: "TestImage"
+topic: "ML"
 ---
 
 ![](https://raw.githubusercontent.com/Olmy760/My-articles/own_redactor/static/images/1787495828287-gjldulj2.png)<div autoplay="true" data-type="image-slider" class="article-image-slider">
