@@ -15,5 +15,9 @@ title: "TestImage"
 </div>
 
 <div data-type="video" class="article-video">
-<iframe data-src="https://vkvideo.ru/video-226111813_456239383" src="https://vkvideo.ru/video-226111813_456239383" frameborder="0" allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowfullscreen="true"></iframe>
+<iframe data-src="https://vkvideo.ru/video-226111813_456239383" src="https://vk.com/video_ext.php?oid=-226111813&amp;id=456239383" frameborder="0" allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowfullscreen="true"></iframe>
+</div>
+
+<div data-type="video" class="article-video">
+<iframe data-src="https://vkvideo.ru/video-226111813_456239383" src="https://vk.com/video_ext.php?oid=-226111813&amp;id=456239383" frameborder="0" allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowfullscreen="true"></iframe>
 </div>
