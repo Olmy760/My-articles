@@ -59,23 +59,25 @@ import "./admin.css";
    CONSTANTS
    ========================================================= */
 
-const EMPTY_FRONT_MATTER = {
-    title: "",
-    description: "",
-    date: "",
-    topic: "Other",
-    tags: [],
-    image: ""
-};
-
-
-const TOPICS = [
+const DEFAULT_TOPICS = [
     "ML",
     "C++",
     "Algorithms",
     "TTS",
     "Other"
 ];
+
+const TOPICS_STORAGE_KEY =
+    "my-articles-admin-topics";
+
+
+const EMPTY_FRONT_MATTER = {
+    title: "",
+    description: "",
+    date: "",
+    topic: "Other",
+    image: ""
+};
 
 
 /* =========================================================
@@ -105,8 +107,7 @@ export default function AdminApp() {
 
     const [metadata, setMetadata] =
         useState({
-            ...EMPTY_FRONT_MATTER,
-            tags: []
+            ...EMPTY_FRONT_MATTER
         });
 
     const [status, setStatus] =
@@ -123,6 +124,584 @@ export default function AdminApp() {
 
     const [searchQuery, setSearchQuery] =
         useState("");
+
+    const [topics, setTopics] =
+        useState(DEFAULT_TOPICS);
+
+    const [showTopicManager, setShowTopicManager] =
+        useState(false);
+
+    const [newTopicName, setNewTopicName] =
+        useState("");
+
+    const [renamingTopic, setRenamingTopic] =
+        useState(null);
+
+    const [renamingTopicName, setRenamingTopicName] =
+        useState("");
+
+
+    /* =====================================================
+       TOPICS
+       ===================================================== */
+
+    useEffect(() => {
+
+        loadTopics();
+
+    }, []);
+
+
+    function loadTopics() {
+
+        try {
+
+            const stored =
+                localStorage.getItem(
+                    TOPICS_STORAGE_KEY
+                );
+
+
+            if (!stored) {
+
+                setTopics(
+                    DEFAULT_TOPICS
+                );
+
+                return;
+
+            }
+
+
+            const parsed =
+                JSON.parse(
+                    stored
+                );
+
+
+            if (
+                !Array.isArray(parsed)
+            ) {
+
+                setTopics(
+                    DEFAULT_TOPICS
+                );
+
+                return;
+
+            }
+
+
+            const normalized =
+                normalizeTopics(
+                    parsed
+                );
+
+
+            setTopics(
+                normalized
+            );
+
+        } catch (error) {
+
+            console.error(
+                "Не удалось загрузить темы:",
+                error
+            );
+
+            setTopics(
+                DEFAULT_TOPICS
+            );
+
+        }
+
+    }
+
+
+    function saveTopics(
+        nextTopics
+    ) {
+
+        const normalized =
+            normalizeTopics(
+                nextTopics
+            );
+
+
+        setTopics(
+            normalized
+        );
+
+
+        try {
+
+            localStorage.setItem(
+                TOPICS_STORAGE_KEY,
+                JSON.stringify(
+                    normalized
+                )
+            );
+
+        } catch (error) {
+
+            console.error(
+                "Не удалось сохранить темы:",
+                error
+            );
+
+        }
+
+    }
+
+
+    function normalizeTopics(
+        values
+    ) {
+
+        const result = [];
+
+
+        for (
+            const value of values
+        ) {
+
+            const topic =
+                String(
+                    value || ""
+                ).trim();
+
+
+            if (!topic) {
+                continue;
+            }
+
+
+            if (
+                !result.includes(topic)
+            ) {
+
+                result.push(
+                    topic
+                );
+
+            }
+
+        }
+
+
+        if (
+            !result.includes("Other")
+        ) {
+
+            result.push("Other");
+
+        }
+
+
+        return result;
+
+    }
+
+
+    function addTopic() {
+
+        const topic =
+            newTopicName.trim();
+
+        if (!topic) {
+            return;
+        }
+
+        try {
+            validateTopicName(topic);
+        } catch (error) {
+            setStatus(error.message);
+            return;
+        }
+
+        saveTopics([
+            ...topics,
+            topic
+        ]);
+
+        setNewTopicName("");
+
+        setStatus(
+            `Тема "${topic}" добавлена ✓`
+        );
+
+    }
+
+
+    function deleteTopic(
+        topic
+    ) {
+
+        if (
+            topic === "Other"
+        ) {
+
+            setStatus(
+                'Тему "Other" удалить нельзя'
+            );
+
+            return;
+
+        }
+
+
+        const articlesInTopic =
+            articles.filter(
+                article =>
+                    article.topic ===
+                    topic
+            );
+
+
+        if (
+            articlesInTopic.length > 0
+        ) {
+
+            setStatus(
+                `Нельзя удалить "${topic}": в ней ${articlesInTopic.length} ${
+                    articlesInTopic.length === 1
+                        ? "статья"
+                        : "статей"
+                }. Сначала перенесите статьи в другую тему.`
+            );
+
+            return;
+
+        }
+
+
+        if (
+            !window.confirm(
+                `Удалить тему "${topic}"?`
+            )
+        ) {
+
+            return;
+
+        }
+
+
+        saveTopics(
+            topics.filter(
+                existing =>
+                    existing !== topic
+            )
+        );
+
+
+        setStatus(
+            `Тема "${topic}" удалена ✓`
+        );
+
+    }
+
+
+    /* =====================================================
+       TOPIC NAME VALIDATION
+       ===================================================== */
+
+    function validateTopicName(
+        value,
+        currentTopic = null
+    ) {
+        const topic = String(value || "").trim();
+
+        if (!topic) {
+            throw new Error("Название темы не может быть пустым");
+        }
+
+        if (topic.length > 50) {
+            throw new Error("Название темы слишком длинное");
+        }
+
+        if (/[\\/:*?"<>|]/.test(topic)) {
+            throw new Error(
+                "В названии темы нельзя использовать: \\ / : * ? \" < > |"
+            );
+        }
+
+        if (topic.toLowerCase() === "other") {
+            throw new Error('Тему "Other" нельзя переименовать или создать заново');
+        }
+
+        if (topics.some(
+            existing =>
+                existing !== currentTopic &&
+                existing.toLowerCase() === topic.toLowerCase()
+        )) {
+            throw new Error("Такая тема уже существует");
+        }
+
+        return topic;
+    }
+
+
+    /* =====================================================
+       RENAME TOPIC
+       ===================================================== */
+
+    function startRenameTopic(topic) {
+        if (topic === "Other") {
+            setStatus('Тему "Other" переименовать нельзя');
+            return;
+        }
+
+        setRenamingTopic(topic);
+        setRenamingTopicName(topic);
+    }
+
+
+    function cancelRenameTopic() {
+        setRenamingTopic(null);
+        setRenamingTopicName("");
+    }
+
+
+    async function renameTopic() {
+        const oldTopic = renamingTopic;
+
+        if (!oldTopic) {
+            return;
+        }
+
+        let newTopic;
+
+        try {
+            newTopic = validateTopicName(
+                renamingTopicName,
+                oldTopic
+            );
+        } catch (error) {
+            setStatus(error.message);
+            return;
+        }
+
+        if (oldTopic === newTopic) {
+            cancelRenameTopic();
+            return;
+        }
+
+        const articlesToMove = articles.filter(
+            article =>
+                article.topic === oldTopic ||
+                getTopicFromPath(article.path) === oldTopic
+        );
+
+        if (!window.confirm(
+            `Переименовать тему "${oldTopic}" в "${newTopic}"?\n\n` +
+            `Будет перенесено статей: ${articlesToMove.length}.\n` +
+            "У каждого файла изменится путь и topic в front matter."
+        )) {
+            return;
+        }
+
+        try {
+            setSaving(true);
+            setStatus(
+                `Подготовка переименования: 0/${articlesToMove.length}...`
+            );
+
+            const migrationItems = [];
+
+            /* Находим и читаем все статьи старой темы. */
+            for (const article of articlesToMove) {
+                if (!article?.path) {
+                    throw new Error("У одной из статей отсутствует путь");
+                }
+
+                const file = await getArticleContent(article.path);
+                const parts = article.path.split("/");
+                const filename = parts[parts.length - 1];
+
+                if (!filename) {
+                    throw new Error(
+                        `Не удалось определить имя файла: ${article.path}`
+                    );
+                }
+
+                const parsed = parseFrontMatter(file.content);
+                const articleDate =
+                    parsed.frontMatter.date ||
+                    article.date ||
+                    null;
+
+                const year =
+                    article.year ||
+                    (articleDate
+                        ? String(articleDate).slice(0, 4)
+                        : parts[2] || "Без даты");
+
+                migrationItems.push({
+                    article,
+                    parsed: {
+                        ...parsed,
+                        raw: file.content
+                    },
+                    newPath:
+                        `_posts/${normalizeTopic(newTopic)}/${year}/${filename}`,
+                    year
+                });
+            }
+
+            /* Проверяем будущие пути до любых изменений. */
+            const movingPaths = new Set(
+                migrationItems.map(item => item.article.path)
+            );
+
+            const existingPaths = new Set(
+                articles.map(article => article.path)
+            );
+
+            for (const item of migrationItems) {
+                if (
+                    existingPaths.has(item.newPath) &&
+                    !movingPaths.has(item.newPath)
+                ) {
+                    throw new Error(
+                        `Новый файл уже существует: ${item.newPath}`
+                    );
+                }
+            }
+
+            /* Создаём каждый файл в новом каталоге и меняем front matter. */
+            for (let index = 0; index < migrationItems.length; index++) {
+                const item = migrationItems[index];
+
+                const newMarkdown =
+                    updateFrontMatterTopic(
+                        item.parsed.raw,
+                        newTopic
+                    );
+
+                await createArticle(
+                    item.newPath,
+                    newMarkdown,
+                    `Rename topic ${oldTopic} to ${newTopic}: ${
+                        getArticleTitle(item.article)
+                    }`
+                );
+
+                setStatus(
+                    `Создание новых файлов: ${index + 1}/${migrationItems.length}...`
+                );
+            }
+
+            /* Удаляем старые файлы только после создания всех новых. */
+            for (let index = 0; index < migrationItems.length; index++) {
+                const item = migrationItems[index];
+
+                await deleteArticle(
+                    item.article.path,
+                    `Remove old topic path ${oldTopic} after rename to ${newTopic}: ${
+                        getArticleTitle(item.article)
+                    }`
+                );
+
+                setStatus(
+                    `Удаление старых файлов: ${index + 1}/${migrationItems.length}...`
+                );
+            }
+
+            /* Заменяем старую тему в topics только после миграции. */
+            saveTopics(
+                topics.map(
+                    topic =>
+                        topic === oldTopic
+                            ? newTopic
+                            : topic
+                )
+            );
+
+            /* Сохраняем открываемую статью до перезагрузки списка. */
+            const renamedCurrentArticle = currentArticle
+                ? migrationItems.find(
+                    item =>
+                        item.article.path === currentArticle.path
+                )
+                : null;
+
+            if (renamedCurrentArticle) {
+                setCurrentArticle(previous => ({
+                    ...previous,
+                    path: renamedCurrentArticle.newPath,
+                    topic: newTopic,
+                    year: renamedCurrentArticle.year,
+                    sha: null
+                }));
+            }
+
+            setMetadata(previous => ({
+                ...previous,
+                topic:
+                    previous.topic === oldTopic
+                        ? newTopic
+                        : previous.topic
+            }));
+
+            cancelRenameTopic();
+
+            /* articles полностью перечитываются из GitHub. */
+            await loadArticles();
+
+            setStatus(
+                `Тема "${oldTopic}" переименована в "${newTopic}" ✓`
+            );
+        } catch (error) {
+            console.error("Ошибка переименования темы:", error);
+            setStatus(
+                `Ошибка переименования темы: ${error.message}`
+            );
+        } finally {
+            setSaving(false);
+        }
+    }
+
+
+    /*
+     * Добавляем в список тем темы,
+     * которые уже существуют в GitHub.
+     *
+     * Это особенно важно для старых статей,
+     * если тема была создана до появления
+     * менеджера тем.
+     */
+    function mergeArticleTopics(
+        articleList
+    ) {
+
+        const articleTopics =
+            articleList
+                .map(
+                    article =>
+                        article.topic
+                )
+                .filter(Boolean);
+
+
+        const merged =
+            normalizeTopics([
+                ...topics,
+                ...articleTopics
+            ]);
+
+
+        if (
+            JSON.stringify(merged) !==
+            JSON.stringify(topics)
+        ) {
+
+            saveTopics(
+                merged
+            );
+
+        }
+
+    }
 
 
     /* =====================================================
@@ -198,7 +777,9 @@ export default function AdminApp() {
 
 
                     if (!image) {
+
                         return false;
+
                     }
 
 
@@ -226,7 +807,9 @@ export default function AdminApp() {
 
                         .catch(error => {
 
-                            console.error(error);
+                            console.error(
+                                error
+                            );
 
                             setStatus(
                                 `Ошибка загрузки: ${error.message}`
@@ -248,7 +831,9 @@ export default function AdminApp() {
        IMAGE URL
        ===================================================== */
 
-    function getImageUrl(path) {
+    function getImageUrl(
+        path
+    ) {
 
         return (
             `https://raw.githubusercontent.com/` +
@@ -266,7 +851,9 @@ export default function AdminApp() {
     async function insertImage() {
 
         const input =
-            document.createElement("input");
+            document.createElement(
+                "input"
+            );
 
 
         input.type =
@@ -285,7 +872,9 @@ export default function AdminApp() {
 
 
                 if (!file) {
+
                     return;
+
                 }
 
 
@@ -320,7 +909,9 @@ export default function AdminApp() {
 
                 } catch (error) {
 
-                    console.error(error);
+                    console.error(
+                        error
+                    );
 
                     setStatus(
                         `Ошибка загрузки: ${error.message}`
@@ -349,7 +940,9 @@ export default function AdminApp() {
 
 
         if (!url) {
+
             return;
+
         }
 
 
@@ -388,7 +981,9 @@ export default function AdminApp() {
     async function insertSlider() {
 
         const input =
-            document.createElement("input");
+            document.createElement(
+                "input"
+            );
 
 
         input.type =
@@ -412,7 +1007,9 @@ export default function AdminApp() {
                     );
 
 
-                if (files.length < 2) {
+                if (
+                    files.length < 2
+                ) {
 
                     setStatus(
                         "Выберите минимум 2 изображения"
@@ -493,7 +1090,9 @@ export default function AdminApp() {
 
                 } catch (error) {
 
-                    console.error(error);
+                    console.error(
+                        error
+                    );
 
                     setStatus(
                         `Ошибка загрузки: ${error.message}`
@@ -560,7 +1159,9 @@ export default function AdminApp() {
 
         } catch (error) {
 
-            console.error(error);
+            console.error(
+                error
+            );
 
             setStatus(
                 error.message
@@ -568,7 +1169,9 @@ export default function AdminApp() {
 
         } finally {
 
-            setAuthLoading(false);
+            setAuthLoading(
+                false
+            );
 
         }
 
@@ -628,7 +1231,9 @@ export default function AdminApp() {
 
         } catch (error) {
 
-            console.error(error);
+            console.error(
+                error
+            );
 
             setStatus(
                 error.message
@@ -650,8 +1255,7 @@ export default function AdminApp() {
         setCurrentArticle(null);
 
         setMetadata({
-            ...EMPTY_FRONT_MATTER,
-            tags: []
+            ...EMPTY_FRONT_MATTER
         });
 
         editor?.commands.clearContent();
@@ -669,7 +1273,9 @@ export default function AdminApp() {
 
         try {
 
-            setLoadingArticles(true);
+            setLoadingArticles(
+                true
+            );
 
 
             const files =
@@ -697,15 +1303,22 @@ export default function AdminApp() {
 
 
             /*
-             * Если открытая статья существует —
-             * обновляем её данные из нового списка.
+             * Если в GitHub есть тема,
+             * которой ещё нет в localStorage,
+             * добавляем её автоматически.
              */
+            mergeArticleTopics(
+                normalized
+            );
+
 
             setCurrentArticle(
                 previous => {
 
                     if (!previous) {
+
                         return previous;
+
                     }
 
 
@@ -718,7 +1331,9 @@ export default function AdminApp() {
 
 
                     if (!updated) {
+
                         return null;
+
                     }
 
 
@@ -732,7 +1347,9 @@ export default function AdminApp() {
 
         } catch (error) {
 
-            console.error(error);
+            console.error(
+                error
+            );
 
             setStatus(
                 `Ошибка загрузки: ${error.message}`
@@ -740,7 +1357,9 @@ export default function AdminApp() {
 
         } finally {
 
-            setLoadingArticles(false);
+            setLoadingArticles(
+                false
+            );
 
         }
 
@@ -761,7 +1380,9 @@ export default function AdminApp() {
 
 
             if (!query) {
+
                 return articles;
+
             }
 
 
@@ -812,10 +1433,12 @@ export default function AdminApp() {
         useMemo(
             () =>
                 groupArticlesByTopic(
-                    filteredArticles
+                    filteredArticles,
+                    topics
                 ),
             [
-                filteredArticles
+                filteredArticles,
+                topics
             ]
         );
 
@@ -829,7 +1452,9 @@ export default function AdminApp() {
     ) {
 
         if (!editor) {
+
             return;
+
         }
 
 
@@ -857,20 +1482,12 @@ export default function AdminApp() {
 
 
             const topic =
-                TOPICS.includes(
+                topics.includes(
                     parsedTopic
                 )
                     ? parsedTopic
                     : article.topic ||
                       "Other";
-
-
-            const tags =
-                Array.isArray(
-                    parsed.frontMatter.tags
-                )
-                    ? parsed.frontMatter.tags
-                    : [];
 
 
             setMetadata({
@@ -879,9 +1496,7 @@ export default function AdminApp() {
 
                 ...parsed.frontMatter,
 
-                topic,
-
-                tags
+                topic
 
             });
 
@@ -916,7 +1531,9 @@ export default function AdminApp() {
 
         } catch (error) {
 
-            console.error(error);
+            console.error(
+                error
+            );
 
             setStatus(
                 `Ошибка: ${error.message}`
@@ -933,7 +1550,9 @@ export default function AdminApp() {
 
     function createNewArticle() {
 
-        setCurrentArticle(null);
+        setCurrentArticle(
+            null
+        );
 
 
         setMetadata({
@@ -944,9 +1563,9 @@ export default function AdminApp() {
                 today(),
 
             topic:
-                "Other",
-
-            tags: []
+                topics.includes("Other")
+                    ? "Other"
+                    : topics[0] || "Other"
 
         });
 
@@ -962,18 +1581,157 @@ export default function AdminApp() {
 
 
     /* =====================================================
+       CHANGE ARTICLE TOPIC
+       ===================================================== */
+
+    async function moveArticleToTopic(
+        article,
+        newTopic
+    ) {
+
+        if (!article?.path) {
+
+            throw new Error(
+                "Путь статьи не найден"
+            );
+
+        }
+
+
+        const oldTopic =
+            article.topic ||
+            getTopicFromPath(
+                article.path
+            ) ||
+            "Other";
+
+
+        if (
+            oldTopic === newTopic
+        ) {
+
+            return article;
+
+        }
+
+
+        const file =
+            await getArticleContent(
+                article.path
+            );
+
+
+        const filename =
+            article.path
+                .split("/")
+                .pop();
+
+
+        if (!filename) {
+
+            throw new Error(
+                "Не удалось определить имя файла"
+            );
+
+        }
+
+
+        const date =
+            metadata.date ||
+            article.date ||
+            today();
+
+
+        const year =
+            date.slice(
+                0,
+                4
+            );
+
+
+        const newPath =
+            `_posts/` +
+            `${normalizeTopic(newTopic)}/` +
+            `${year}/` +
+            `${filename}`;
+
+
+        if (
+            newPath ===
+            article.path
+        ) {
+
+            return article;
+
+        }
+
+
+        /*
+         * Сначала создаём новую версию.
+         * Только после успешного создания
+         * удаляем старую.
+         */
+        await createArticle(
+            newPath,
+            file.content,
+            `Move article to ${newTopic}: ${metadata.title || article.name}`
+        );
+
+
+        try {
+
+            await deleteArticle(
+                article.path,
+                `Move article from ${oldTopic} to ${newTopic}: ${metadata.title || article.name}`
+            );
+
+        } catch (error) {
+
+            /*
+             * Новая версия уже существует,
+             * поэтому сообщаем об этом отдельно.
+             */
+            throw new Error(
+                `Статья скопирована в новую тему, но старый файл не удалось удалить: ${error.message}`
+            );
+
+        }
+
+
+        return {
+
+            ...article,
+
+            path:
+                newPath,
+
+            topic:
+                newTopic,
+
+            year
+
+        };
+
+    }
+
+
+    /* =====================================================
        SAVE ARTICLE
        ===================================================== */
 
     async function saveArticle() {
 
         if (!editor) {
+
             return;
+
         }
 
 
         if (saving) {
+
             return;
+
         }
 
 
@@ -996,12 +1754,19 @@ export default function AdminApp() {
 
         try {
 
-            setSaving(true);
+            setSaving(
+                true
+            );
 
 
             setStatus(
                 "Сохранение..."
             );
+
+
+            const selectedTopic =
+                metadata.topic ||
+                "Other";
 
 
             const safeMetadata = {
@@ -1013,19 +1778,11 @@ export default function AdminApp() {
                 title,
 
                 topic:
-                    metadata.topic ||
-                    "Other",
+                    selectedTopic,
 
                 date:
                     metadata.date ||
-                    today(),
-
-                tags:
-                    Array.isArray(
-                        metadata.tags
-                    )
-                        ? metadata.tags
-                        : []
+                    today()
 
             };
 
@@ -1070,7 +1827,13 @@ export default function AdminApp() {
 
                     sha:
                         result?.content?.sha ||
-                        null
+                        null,
+
+                    topic:
+                        safeMetadata.topic,
+
+                    date:
+                        safeMetadata.date
 
                 });
 
@@ -1080,6 +1843,145 @@ export default function AdminApp() {
 
                 setStatus(
                     "Создано ✓"
+                );
+
+
+                return;
+
+            }
+
+
+            /* =================================================
+               EXISTING ARTICLE
+               ================================================= */
+
+            const oldTopic =
+                currentArticle.topic ||
+                getTopicFromPath(
+                    currentArticle.path
+                ) ||
+                "Other";
+
+
+            /*
+             * Если тема изменилась,
+             * сначала обновляем markdown,
+             * затем переносим файл.
+             */
+            if (
+                oldTopic !==
+                safeMetadata.topic
+            ) {
+
+                setStatus(
+                    "Перенос статьи в новую тему..."
+                );
+
+
+                /*
+                 * Получаем актуальный SHA/content.
+                 */
+                const file =
+                    await getArticleContent(
+                        currentArticle.path
+                    );
+
+
+                const filename =
+                    currentArticle.path
+                        .split("/")
+                        .pop();
+
+
+                const year =
+                    safeMetadata.date.slice(
+                        0,
+                        4
+                    );
+
+
+                const newPath =
+                    `_posts/` +
+                    `${normalizeTopic(safeMetadata.topic)}/` +
+                    `${year}/` +
+                    `${filename}`;
+
+
+                if (
+                    newPath ===
+                    currentArticle.path
+                ) {
+
+                    throw new Error(
+                        "Новый путь статьи совпадает со старым"
+                    );
+
+                }
+
+
+                /*
+                 * Сначала создаём файл
+                 * в новой теме.
+                 */
+                await createArticle(
+                    newPath,
+                    markdown,
+                    `Move article to ${safeMetadata.topic}: ${safeMetadata.title}`
+                );
+
+
+                /*
+                 * После успешного создания
+                 * удаляем старый файл.
+                 */
+                await deleteArticle(
+                    currentArticle.path,
+                    `Move article from ${oldTopic} to ${safeMetadata.topic}: ${safeMetadata.title}`
+                );
+
+
+                setCurrentArticle(
+                    previous => {
+
+                        if (!previous) {
+
+                            return previous;
+
+                        }
+
+
+                        return {
+
+                            ...previous,
+
+                            path:
+                                newPath,
+
+                            name:
+                                filename,
+
+                            topic:
+                                safeMetadata.topic,
+
+                            year,
+
+                            date:
+                                safeMetadata.date,
+
+                            sha:
+                                null
+
+                        };
+
+                    }
+                );
+
+
+                await loadArticles();
+
+
+                setStatus(
+                    "Сохранено и перенесено ✓"
                 );
 
 
@@ -1104,13 +2006,21 @@ export default function AdminApp() {
                 previous => {
 
                     if (!previous) {
+
                         return previous;
+
                     }
 
 
                     return {
 
                         ...previous,
+
+                        topic:
+                            safeMetadata.topic,
+
+                        date:
+                            safeMetadata.date,
 
                         sha:
                             result?.content?.sha ||
@@ -1131,7 +2041,9 @@ export default function AdminApp() {
 
         } catch (error) {
 
-            console.error(error);
+            console.error(
+                error
+            );
 
             setStatus(
                 `Ошибка: ${error.message}`
@@ -1139,7 +2051,9 @@ export default function AdminApp() {
 
         } finally {
 
-            setSaving(false);
+            setSaving(
+                false
+            );
 
         }
 
@@ -1147,12 +2061,14 @@ export default function AdminApp() {
 
 
     /* =====================================================
-       DELETE
+       DELETE ARTICLE
        ===================================================== */
 
     async function handleDelete() {
 
-        if (!currentArticle?.path) {
+        if (
+            !currentArticle?.path
+        ) {
 
             setStatus(
                 "Статья не выбрана"
@@ -1199,11 +2115,7 @@ export default function AdminApp() {
 
 
             setMetadata({
-
-                ...EMPTY_FRONT_MATTER,
-
-                tags: []
-
+                ...EMPTY_FRONT_MATTER
             });
 
 
@@ -1219,7 +2131,9 @@ export default function AdminApp() {
 
         } catch (error) {
 
-            console.error(error);
+            console.error(
+                error
+            );
 
             setStatus(
                 `Ошибка: ${error.message}`
@@ -1348,7 +2262,7 @@ export default function AdminApp() {
                             }
                             title="Обновить статьи"
                         >
-                            ↻
+                            ⟳
                         </button>
 
 
@@ -1367,7 +2281,9 @@ export default function AdminApp() {
                 </div>
 
 
-                {/* SEARCH */}
+                {/* =================================================
+                   SEARCH
+                   ================================================= */}
 
                 <div className="admin-search">
 
@@ -1391,7 +2307,221 @@ export default function AdminApp() {
                 </div>
 
 
-                {/* ARTICLES */}
+                {/* =================================================
+                   TOPIC MANAGER
+                   ================================================= */}
+
+                <div className="admin-topic-manager">
+
+                    <button
+                        className="admin-topic-manager-toggle"
+                        onClick={() =>
+                            setShowTopicManager(
+                                previous =>
+                                    !previous
+                            )
+                        }
+                    >
+                        <span>
+                            Темы
+                        </span>
+
+                        <span>
+                            {topics.length}
+                        </span>
+                    </button>
+
+
+                    {showTopicManager && (
+
+                        <div className="admin-topic-manager-panel">
+
+                            <div className="admin-topic-add">
+
+                                <input
+                                    type="text"
+
+                                    value={
+                                        newTopicName
+                                    }
+
+                                    onChange={
+                                        event =>
+                                            setNewTopicName(
+                                                event.target.value
+                                            )
+                                    }
+
+                                    onKeyDown={
+                                        event => {
+
+                                            if (
+                                                event.key ===
+                                                "Enter"
+                                            ) {
+
+                                                event.preventDefault();
+
+                                                addTopic();
+
+                                            }
+
+                                        }
+                                    }
+
+                                    placeholder="Новая тема"
+                                />
+
+
+                                <button
+                                    type="button"
+                                    onClick={
+                                        addTopic
+                                    }
+                                    disabled={
+                                        saving
+                                    }
+                                >
+                                    +
+                                </button>
+
+                            </div>
+
+
+                            <div className="admin-topic-list">
+
+                                {topics.map(
+                                    topic => {
+
+                                        const count =
+                                            articles.filter(
+                                                article =>
+                                                    article.topic ===
+                                                    topic
+                                            ).length;
+
+
+                                        return (
+
+                                            <div
+                                                className={
+                                                    "admin-topic-row " +
+                                                    (renamingTopic === topic
+                                                        ? "editing"
+                                                        : "")
+                                                }
+                                                key={
+                                                    topic
+                                                }
+                                            >
+                                                {renamingTopic === topic ? (
+                                                    <>
+                                                        <input
+                                                            className="topic-edit-input"
+                                                            type="text"
+                                                            value={
+                                                                renamingTopicName
+                                                            }
+                                                            autoFocus
+                                                            disabled={saving}
+                                                            onChange={event =>
+                                                                setRenamingTopicName(
+                                                                    event.target.value
+                                                                )
+                                                            }
+                                                            onKeyDown={event => {
+                                                                if (event.key === "Enter") {
+                                                                    event.preventDefault();
+                                                                    renameTopic();
+                                                                }
+
+                                                                if (event.key === "Escape") {
+                                                                    event.preventDefault();
+                                                                    cancelRenameTopic();
+                                                                }
+                                                            }}
+                                                        />
+
+                                                        <div>
+                                                            <button
+                                                                type="button"
+                                                                className="topic-save"
+                                                                onClick={renameTopic}
+                                                                disabled={saving}
+                                                                title="Сохранить переименование"
+                                                            >
+                                                                ✓
+                                                            </button>
+
+                                                            <button
+                                                                type="button"
+                                                                className="topic-cancel"
+                                                                onClick={cancelRenameTopic}
+                                                                disabled={saving}
+                                                                title="Отменить"
+                                                            >
+                                                                ×
+                                                            </button>
+                                                        </div>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <span>
+                                                            {topic}
+                                                        </span>
+
+                                                        <div>
+                                                            <span className="admin-topic-row-count">
+                                                                {count}
+                                                            </span>
+
+                                                            {topic !== "Other" && (
+                                                                <>
+                                                                    <button
+                                                                        type="button"
+                                                                        className="topic-edit"
+                                                                        onClick={() =>
+                                                                            startRenameTopic(topic)
+                                                                        }
+                                                                        title="Переименовать тему"
+                                                                    >
+                                                                        ✎
+                                                                    </button>
+
+                                                                    <button
+                                                                        type="button"
+                                                                        className="admin-topic-delete"
+                                                                        onClick={() =>
+                                                                            deleteTopic(topic)
+                                                                        }
+                                                                        title="Удалить тему"
+                                                                    >
+                                                                        ×
+                                                                    </button>
+                                                                </>
+                                                            )}
+                                                        </div>
+                                                    </>
+                                                )}
+                                            </div>
+
+                                        );
+
+                                    }
+                                )}
+
+                            </div>
+
+                        </div>
+
+                    )}
+
+                </div>
+
+
+                {/* =================================================
+                   ARTICLES
+                   ================================================= */}
 
                 <div className="admin-articles">
 
@@ -1412,6 +2542,7 @@ export default function AdminApp() {
                                 <div>
                                     Нет статей
                                 </div>
+
 
                                 <button
                                     className="empty-new-button"
@@ -1695,7 +2826,9 @@ export default function AdminApp() {
                 </div>
 
 
-                {/* FOOTER */}
+                {/* =================================================
+                   FOOTER
+                   ================================================= */}
 
                 <div className="admin-sidebar-footer">
 
@@ -1858,6 +2991,14 @@ export default function AdminApp() {
                     />
 
 
+                    {/* =================================================
+                       TOPIC
+                       ================================================= */}
+
+                    {/* =================================================
+   TOPIC
+   ================================================= */}
+
                     <select
                         className="article-topic"
 
@@ -1880,7 +3021,7 @@ export default function AdminApp() {
                         }
                     >
 
-                        {TOPICS.map(
+                        {topics.map(
                             topic => (
 
                                 <option
@@ -1895,6 +3036,10 @@ export default function AdminApp() {
 
                     </select>
 
+
+                    {/* =================================================
+                       DATE
+                       ================================================= */}
 
                     <div className="metadata-row">
 
@@ -1917,52 +3062,6 @@ export default function AdminApp() {
 
                                         })
                                     )
-                            }
-                        />
-
-
-                        <input
-                            type="text"
-
-                            value={
-                                Array.isArray(
-                                    metadata.tags
-                                )
-                                    ? metadata.tags.join(
-                                        ", "
-                                    )
-                                    : ""
-                            }
-
-                            placeholder="Теги"
-
-                            onChange={
-                                event => {
-
-                                    const tags =
-                                        event
-                                            .target
-                                            .value
-                                            .split(",")
-                                            .map(
-                                                tag =>
-                                                    tag.trim()
-                                            )
-                                            .filter(
-                                                Boolean
-                                            );
-
-
-                                    setMetadata(
-                                        previous => ({
-                                            ...previous,
-
-                                            tags
-
-                                        })
-                                    );
-
-                                }
                             }
                         />
 
@@ -2138,16 +3237,41 @@ function normalizeArticle(
             ),
 
         date:
-            normalizedDate,
-
-        tags:
-            Array.isArray(
-                article.tags
-            )
-                ? article.tags
-                : []
+            normalizedDate
 
     };
+
+}
+
+
+/* =========================================================
+   GET TOPIC FROM PATH
+   ========================================================= */
+
+function getTopicFromPath(
+    path
+) {
+
+    const parts =
+        String(
+            path || ""
+        ).split("/");
+
+
+    if (
+        parts.length >= 4 &&
+        parts[0] === "_posts"
+    ) {
+
+        return (
+            parts[1] ||
+            "Other"
+        );
+
+    }
+
+
+    return "Other";
 
 }
 
@@ -2157,11 +3281,58 @@ function normalizeArticle(
    ========================================================= */
 
 function groupArticlesByTopic(
-    articles = []
+    articles = [],
+    topics = []
 ) {
 
     const topicMap =
         new Map();
+
+
+    /* =========================================================
+       UPDATE TOPIC IN FRONT MATTER
+       ========================================================= */
+
+    function updateFrontMatterTopic(
+        markdown,
+        topic
+    ) {
+        const text = String(markdown || "");
+        const match = text.match(
+            /^---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/
+        );
+        const topicLine = `topic: "${escapeYaml(topic)}"`;
+
+        if (!match) {
+            return "---\n" + topicLine + "\n---\n\n" + text.trim() + "\n";
+        }
+
+        let frontMatter = match[1];
+
+        if (/^topic\s*:/m.test(frontMatter)) {
+            frontMatter = frontMatter.replace(/^topic\s*:.*$/m, topicLine);
+        } else {
+            frontMatter = frontMatter.trimEnd() + "\n" + topicLine;
+        }
+
+        return "---\n" + frontMatter + "\n---\n" + match[2].trim() + "\n";
+    }
+
+
+    /*
+     * Сначала создаём пустые группы
+     * для всех существующих тем.
+     */
+    for (
+        const topic of topics
+    ) {
+
+        topicMap.set(
+            topic,
+            new Map()
+        );
+
+    }
 
 
     for (
@@ -2169,7 +3340,9 @@ function groupArticlesByTopic(
     ) {
 
         if (!article) {
+
             continue;
+
         }
 
 
@@ -2231,10 +3404,22 @@ function groupArticlesByTopic(
         topicMap.entries()
     )
 
+        .filter(
+            ([topic, yearMap]) =>
+                yearMap.size > 0 ||
+                topics.includes(topic)
+        )
+
         .sort(
             ([a], [b]) =>
-                getTopicOrder(a) -
-                getTopicOrder(b)
+                getTopicOrder(
+                    a,
+                    topics
+                ) -
+                getTopicOrder(
+                    b,
+                    topics
+                )
         )
 
         .map(
@@ -2251,16 +3436,24 @@ function groupArticlesByTopic(
                             ([a], [b]) => {
 
                                 if (
-                                    a === "Без даты"
+                                    a ===
+                                    "Без даты"
                                 ) {
+
                                     return 1;
+
                                 }
 
+
                                 if (
-                                    b === "Без даты"
+                                    b ===
+                                    "Без даты"
                                 ) {
+
                                     return -1;
+
                                 }
+
 
                                 return b.localeCompare(
                                     a
@@ -2297,21 +3490,26 @@ function groupArticlesByTopic(
    ========================================================= */
 
 function getTopicOrder(
-    topic
+    topic,
+    topics = []
 ) {
 
     const index =
-        TOPICS.indexOf(
+        topics.indexOf(
             topic
         );
 
 
-    if (index !== -1) {
+    if (
+        index !== -1
+    ) {
+
         return index;
+
     }
 
 
-    return TOPICS.length;
+    return topics.length;
 
 }
 
@@ -2417,7 +3615,9 @@ function formatDate(
 ) {
 
     if (!date) {
+
         return "";
+
     }
 
 
@@ -2428,7 +3628,9 @@ function formatDate(
 
 
     if (!match) {
+
         return date;
+
     }
 
 
@@ -2465,8 +3667,7 @@ function parseFrontMatter(
 
             frontMatter:
                 {
-                    ...EMPTY_FRONT_MATTER,
-                    tags: []
+                    ...EMPTY_FRONT_MATTER
                 },
 
             content:
@@ -2489,14 +3690,7 @@ function parseFrontMatter(
 
             ...EMPTY_FRONT_MATTER,
 
-            ...parsed,
-
-            tags:
-                Array.isArray(
-                    parsed.tags
-                )
-                    ? parsed.tags
-                    : []
+            ...parsed
 
         },
 
@@ -2538,7 +3732,9 @@ function parseYaml(
 
 
         if (!match) {
+
             continue;
+
         }
 
 
@@ -2549,12 +3745,6 @@ function parseYaml(
         let value =
             match[2].trim();
 
-
-        /*
-         * Array:
-         *
-         * tags: ["ML", "XGBoost"]
-         */
 
         if (
             value.startsWith("[") &&
@@ -2568,7 +3758,9 @@ function parseYaml(
                 );
 
 
-            if (!inner.trim()) {
+            if (
+                !inner.trim()
+            ) {
 
                 value = [];
 
@@ -2622,14 +3814,6 @@ function serializeFrontMatter(
     metadata = {}
 ) {
 
-    const safeTags =
-        Array.isArray(
-            metadata.tags
-        )
-            ? metadata.tags
-            : [];
-
-
     const lines = [
         "---"
     ];
@@ -2674,24 +3858,6 @@ function serializeFrontMatter(
 
         lines.push(
             `date: ${metadata.date}`
-        );
-
-    }
-
-
-    if (
-        safeTags.length > 0
-    ) {
-
-        lines.push(
-            `tags: [${safeTags
-                .map(
-                    tag =>
-                        `"${escapeYaml(
-                            tag
-                        )}"`
-                )
-                .join(", ")}]`
         );
 
     }
