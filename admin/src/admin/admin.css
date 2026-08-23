@@ -1,3 +1,7 @@
+/* =====================================================
+   AUTH
+   ===================================================== */
+
 .admin-auth-screen {
     width: 100%;
     height: 100vh;
@@ -17,7 +21,6 @@
     background: #fff;
 
     border: 1px solid #e5e5e5;
-
     border-radius: 16px;
 
     box-shadow:
@@ -45,7 +48,6 @@
     padding: 13px 18px;
 
     border: 0;
-
     border-radius: 8px;
 
     background: #222;
@@ -55,10 +57,18 @@
     cursor: pointer;
 
     font-weight: 600;
+
+    transition:
+        background 0.15s ease,
+        transform 0.15s ease;
 }
 
 .github-login:hover {
     background: #000;
+}
+
+.github-login:active {
+    transform: translateY(1px);
 }
 
 .auth-status {
@@ -82,7 +92,7 @@
 
     overflow: hidden;
 
-    background: white;
+    background: #fff;
 }
 
 
@@ -91,12 +101,12 @@
    ===================================================== */
 
 .admin-sidebar {
-    width: 280px;
+    width: 300px;
+    min-width: 300px;
 
     height: 100%;
 
     display: flex;
-
     flex-direction: column;
 
     border-right: 1px solid #e8e8e8;
@@ -104,26 +114,29 @@
     background: #fafafa;
 }
 
+
+/* =====================================================
+   SIDEBAR HEADER
+   ===================================================== */
+
 .admin-sidebar-header {
     height: 72px;
+    min-height: 72px;
 
-    padding:
-        0 18px;
+    padding: 0 16px 0 18px;
 
     display: flex;
-
     align-items: center;
-
     justify-content: space-between;
 
-    border-bottom:
-        1px solid #e8e8e8;
+    border-bottom: 1px solid #e8e8e8;
 }
 
 .admin-sidebar-header h1 {
     margin: 0;
 
     font-size: 16px;
+    font-weight: 700;
 }
 
 .admin-sidebar-header span {
@@ -136,63 +149,91 @@
     font-size: 11px;
 }
 
+
+/* =====================================================
+   NEW ARTICLE BUTTON
+   ===================================================== */
+
 .new-article-button {
     width: 34px;
     height: 34px;
 
-    border: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 
-    border-radius: 7px;
+    padding: 0;
+
+    border: 0;
+    border-radius: 8px;
 
     background: #222;
 
-    color: white;
+    color: #fff;
 
     cursor: pointer;
 
     font-size: 22px;
+    line-height: 1;
+
+    transition:
+        background 0.15s ease,
+        transform 0.15s ease;
 }
+
+.new-article-button:hover {
+    background: #000;
+}
+
+.new-article-button:active {
+    transform: scale(0.96);
+}
+
+
+/* =====================================================
+   ARTICLES CONTAINER
+   ===================================================== */
 
 .admin-articles {
     flex: 1;
 
     overflow-y: auto;
+    overflow-x: hidden;
 
-    padding: 8px;
+    padding: 10px 8px 14px;
 }
 
-.admin-article {
-    width: 100%;
 
-    padding:
-        11px 12px;
+/* =====================================================
+   SCROLLBAR
+   ===================================================== */
 
-    border: 0;
+.admin-articles::-webkit-scrollbar,
+.admin-editor::-webkit-scrollbar {
+    width: 7px;
+}
 
-    border-radius: 7px;
-
+.admin-articles::-webkit-scrollbar-track,
+.admin-editor::-webkit-scrollbar-track {
     background: transparent;
-
-    color: #555;
-
-    text-align: left;
-
-    cursor: pointer;
-
-    font-size: 13px;
 }
 
-.admin-article:hover {
-    background: #eee;
+.admin-articles::-webkit-scrollbar-thumb,
+.admin-editor::-webkit-scrollbar-thumb {
+    background: #d6d6d6;
+
+    border-radius: 10px;
 }
 
-.admin-article.active {
-    background: #e4e4e4;
-
-    color: #111;
-
-    font-weight: 600;
+.admin-articles::-webkit-scrollbar-thumb:hover,
+.admin-editor::-webkit-scrollbar-thumb:hover {
+    background: #bcbcbc;
 }
+
+
+/* =====================================================
+   EMPTY
+   ===================================================== */
 
 .articles-empty {
     padding: 30px 10px;
@@ -206,15 +247,299 @@
 
 
 /* =====================================================
-   FOOTER
+   ARTICLE TREE
+   ===================================================== */
+
+.article-tree {
+    width: 100%;
+}
+
+
+/* =====================================================
+   TOPIC GROUP
+   ===================================================== */
+
+.article-topic-group {
+    margin-bottom: 4px;
+}
+
+
+/* =====================================================
+   TOPIC HEADER
+   ===================================================== */
+
+.article-topic-header {
+    width: 100%;
+
+    min-height: 38px;
+
+    display: flex;
+    align-items: center;
+
+    gap: 8px;
+
+    padding: 7px 10px;
+
+    border: 0;
+    border-radius: 7px;
+
+    background: transparent;
+
+    color: #222;
+
+    cursor: pointer;
+
+    text-align: left;
+
+    font-size: 13px;
+    font-weight: 600;
+
+    transition:
+        background 0.15s ease;
+}
+
+.article-topic-header:hover {
+    background: #eeeeee;
+}
+
+
+/* =====================================================
+   TREE ARROW
+   ===================================================== */
+
+.article-tree-arrow {
+    width: 14px;
+    min-width: 14px;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    color: #777;
+
+    font-size: 9px;
+
+    transition:
+        transform 0.15s ease;
+}
+
+
+/* =====================================================
+   TOPIC NAME
+   ===================================================== */
+
+.article-topic-header > span:nth-child(2) {
+    flex: 1;
+
+    overflow: hidden;
+
+    white-space: nowrap;
+
+    text-overflow: ellipsis;
+}
+
+
+/* =====================================================
+   ARTICLE COUNT
+   ===================================================== */
+
+.article-count {
+    min-width: 22px;
+    height: 20px;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 0 6px;
+
+    border-radius: 10px;
+
+    background: #e9e9e9;
+
+    color: #777;
+
+    font-size: 10px;
+    font-weight: 600;
+}
+
+
+/* =====================================================
+   TOPIC CONTENT
+   ===================================================== */
+
+.article-topic-content {
+    margin-left: 7px;
+
+    padding-left: 9px;
+
+    border-left: 1px solid #e4e4e4;
+}
+
+
+/* =====================================================
+   YEAR GROUP
+   ===================================================== */
+
+.article-year-group {
+    margin: 2px 0;
+}
+
+
+/* =====================================================
+   YEAR HEADER
+   ===================================================== */
+
+.article-year-header {
+    width: 100%;
+
+    min-height: 32px;
+
+    display: flex;
+    align-items: center;
+
+    gap: 7px;
+
+    padding: 5px 8px;
+
+    border: 0;
+    border-radius: 6px;
+
+    background: transparent;
+
+    color: #777;
+
+    cursor: pointer;
+
+    text-align: left;
+
+    font-size: 11px;
+    font-weight: 600;
+
+    transition:
+        background 0.15s ease,
+        color 0.15s ease;
+}
+
+.article-year-header:hover {
+    background: #eeeeee;
+
+    color: #444;
+}
+
+
+/* =====================================================
+   YEAR CONTENT
+   ===================================================== */
+
+.article-year-content {
+    margin-left: 7px;
+
+    padding: 2px 0 5px 9px;
+
+    border-left: 1px solid #ededed;
+}
+
+
+/* =====================================================
+   ARTICLE ITEM
+   ===================================================== */
+
+.admin-article {
+    width: 100%;
+
+    min-height: 38px;
+
+    display: flex;
+    align-items: center;
+
+    gap: 9px;
+
+    margin: 2px 0;
+
+    padding: 7px 9px;
+
+    border: 0;
+    border-radius: 7px;
+
+    background: transparent;
+
+    color: #555;
+
+    cursor: pointer;
+
+    text-align: left;
+
+    transition:
+        background 0.15s ease,
+        color 0.15s ease;
+}
+
+.admin-article:hover {
+    background: #eeeeee;
+
+    color: #222;
+}
+
+.admin-article.active {
+    background: #e3e3e3;
+
+    color: #111;
+
+    font-weight: 600;
+}
+
+
+/* =====================================================
+   ARTICLE DATE
+   ===================================================== */
+
+.article-date {
+    flex: 0 0 auto;
+
+    color: #999;
+
+    font-size: 10px;
+
+    font-variant-numeric: tabular-nums;
+}
+
+
+/* =====================================================
+   ARTICLE NAME
+   ===================================================== */
+
+.article-name {
+    min-width: 0;
+
+    flex: 1;
+
+    overflow: hidden;
+
+    white-space: nowrap;
+
+    text-overflow: ellipsis;
+
+    font-size: 12px;
+}
+
+
+/* =====================================================
+   SIDEBAR FOOTER
    ===================================================== */
 
 .admin-sidebar-footer {
     padding: 12px;
 
-    border-top:
-        1px solid #e8e8e8;
+    border-top: 1px solid #e8e8e8;
+
+    background: #fafafa;
 }
+
+
+/* =====================================================
+   USER
+   ===================================================== */
 
 .admin-user {
     display: flex;
@@ -229,6 +554,8 @@
 .admin-user img {
     width: 30px;
     height: 30px;
+
+    flex-shrink: 0;
 
     border-radius: 50%;
 }
@@ -249,21 +576,35 @@
     font-size: 10px;
 }
 
+
+/* =====================================================
+   LOGOUT
+   ===================================================== */
+
 .admin-logout {
     width: 100%;
 
     padding: 8px;
 
-    border:
-        1px solid #ddd;
+    border: 1px solid #ddd;
 
     border-radius: 6px;
 
-    background: white;
+    background: #fff;
 
     color: #666;
 
     cursor: pointer;
+
+    transition:
+        background 0.15s ease,
+        border-color 0.15s ease;
+}
+
+.admin-logout:hover {
+    background: #f5f5f5;
+
+    border-color: #ccc;
 }
 
 
@@ -279,8 +620,9 @@
     height: 100%;
 
     display: flex;
-
     flex-direction: column;
+
+    background: #fff;
 }
 
 
@@ -290,18 +632,17 @@
 
 .admin-header {
     height: 64px;
+    min-height: 64px;
 
-    padding:
-        0 24px;
+    padding: 0 24px;
 
     display: flex;
-
     align-items: center;
-
     justify-content: space-between;
 
-    border-bottom:
-        1px solid #e8e8e8;
+    border-bottom: 1px solid #e8e8e8;
+
+    background: #fff;
 }
 
 .admin-header-title {
@@ -314,7 +655,6 @@
     text-overflow: ellipsis;
 
     font-size: 14px;
-
     font-weight: 600;
 }
 
@@ -327,15 +667,27 @@
 }
 
 .admin-status {
+    max-width: 250px;
+
+    overflow: hidden;
+
+    white-space: nowrap;
+
+    text-overflow: ellipsis;
+
     color: #888;
 
     font-size: 12px;
 }
 
+
+/* =====================================================
+   BUTTONS
+   ===================================================== */
+
 .save-button,
 .delete-button {
-    padding:
-        8px 14px;
+    padding: 8px 14px;
 
     border-radius: 7px;
 
@@ -344,6 +696,10 @@
     font-size: 12px;
 
     font-weight: 600;
+
+    transition:
+        background 0.15s ease,
+        opacity 0.15s ease;
 }
 
 .save-button {
@@ -351,16 +707,31 @@
 
     background: #222;
 
-    color: white;
+    color: #fff;
+}
+
+.save-button:hover {
+    background: #000;
+}
+
+.save-button:disabled {
+    opacity: 0.5;
+
+    cursor: default;
 }
 
 .delete-button {
-    border:
-        1px solid #ddd;
+    border: 1px solid #ddd;
 
-    background: white;
+    background: #fff;
 
     color: #b00020;
+}
+
+.delete-button:hover {
+    background: #fff5f5;
+
+    border-color: #e0baba;
 }
 
 
@@ -375,9 +746,13 @@
 
     margin: 0 auto;
 
-    padding:
-        24px 60px 10px;
+    padding: 24px 60px 10px;
 }
+
+
+/* =====================================================
+   TITLE
+   ===================================================== */
 
 .article-title,
 .article-description {
@@ -394,17 +769,67 @@
     margin-bottom: 8px;
 
     font-size: 32px;
-
     font-weight: 700;
+
+    color: #222;
 }
 
+.article-title::placeholder {
+    color: #c5c5c5;
+}
+
+
+/* =====================================================
+   DESCRIPTION
+   ===================================================== */
+
 .article-description {
-    margin-bottom: 15px;
+    margin-bottom: 14px;
 
     font-size: 15px;
 
     color: #888;
 }
+
+.article-description::placeholder {
+    color: #bbb;
+}
+
+
+/* =====================================================
+   TOPIC SELECT
+   ===================================================== */
+
+.article-topic {
+    height: 32px;
+
+    margin-bottom: 10px;
+
+    padding: 0 9px;
+
+    border: 1px solid #e5e5e5;
+
+    border-radius: 6px;
+
+    outline: none;
+
+    background: #fff;
+
+    color: #555;
+
+    font-size: 12px;
+
+    cursor: pointer;
+}
+
+.article-topic:focus {
+    border-color: #bbb;
+}
+
+
+/* =====================================================
+   METADATA ROW
+   ===================================================== */
 
 .metadata-row {
     display: flex;
@@ -413,16 +838,25 @@
 }
 
 .metadata-row input {
+    height: 32px;
+
     padding: 7px 9px;
 
-    border:
-        1px solid #e5e5e5;
+    border: 1px solid #e5e5e5;
 
     border-radius: 6px;
 
     outline: none;
 
+    background: #fff;
+
     font-size: 12px;
+
+    color: #444;
+}
+
+.metadata-row input:focus {
+    border-color: #bbb;
 }
 
 .metadata-row input[type="text"] {
@@ -438,10 +872,15 @@
     flex: 1;
 
     overflow-y: auto;
+    overflow-x: hidden;
 
-    padding:
-        20px 60px 100px;
+    padding: 20px 60px 100px;
 }
+
+
+/* =====================================================
+   TIPTAP
+   ===================================================== */
 
 .tiptap-editor {
     width: 100%;
@@ -466,34 +905,34 @@
 }
 
 .tiptap-editor h1 {
-    margin:
-        1.5em 0 0.5em;
+    margin: 1.5em 0 0.5em;
 
     font-size: 2em;
 }
 
 .tiptap-editor h2 {
-    margin:
-        1.4em 0 0.5em;
+    margin: 1.4em 0 0.5em;
 
     font-size: 1.5em;
 }
 
 .tiptap-editor h3 {
-    margin:
-        1.3em 0 0.5em;
+    margin: 1.3em 0 0.5em;
 
     font-size: 1.25em;
 }
 
+.tiptap-editor ul,
+.tiptap-editor ol {
+    padding-left: 1.5em;
+}
+
 .tiptap-editor blockquote {
-    margin:
-        1.5em 0;
+    margin: 1.5em 0;
 
     padding-left: 20px;
 
-    border-left:
-        3px solid #ddd;
+    border-left: 3px solid #ddd;
 
     color: #777;
 }
@@ -509,18 +948,27 @@
 
     font-family:
         "JetBrains Mono",
+        "Fira Code",
         monospace;
 
     font-size: 14px;
+
+    line-height: 1.5;
 }
 
 .tiptap-editor code {
-    padding:
-        2px 5px;
+    padding: 2px 5px;
 
     border-radius: 4px;
 
     background: #f2f2f2;
+
+    font-family:
+        "JetBrains Mono",
+        "Fira Code",
+        monospace;
+
+    font-size: 0.9em;
 }
 
 .tiptap-editor img {
@@ -530,54 +978,62 @@
 
     height: auto;
 
-    margin:
-        24px auto;
+    margin: 24px auto;
 
     border-radius: 8px;
 }
 
+.tiptap-editor a {
+    color: #2563eb;
+
+    text-decoration: underline;
+}
+
+.tiptap-editor hr {
+    margin: 32px 0;
+
+    border: 0;
+
+    border-top: 1px solid #e5e5e5;
+}
+
 
 /* =====================================================
-   MOBILE
+   EDITOR TOOLBAR
    ===================================================== */
-
-@media (max-width: 800px) {
-
-    .admin-sidebar {
-        width: 220px;
-    }
-
-    .metadata {
-        padding:
-            20px 25px 10px;
-    }
-
-    .admin-editor {
-        padding:
-            20px 25px 100px;
-    }
-
-}
 
 .editor-toolbar {
     display: flex;
+
     align-items: center;
+
     gap: 6px;
+
     padding: 10px 14px;
+
     border-bottom: 1px solid #e5e7eb;
-    background: #ffffff;
+
+    background: #fff;
+
     position: sticky;
+
     top: 0;
+
     z-index: 20;
 }
 
 .editor-toolbar button,
 .editor-bubble-toolbar button {
     border: 0;
+
     background: transparent;
+
     border-radius: 7px;
+
     padding: 7px 9px;
+
     cursor: pointer;
+
     font-size: 13px;
 }
 
@@ -591,98 +1047,221 @@
     background: #e5e7eb;
 }
 
+.editor-toolbar button:disabled {
+    opacity: 0.4;
+
+    cursor: default;
+}
+
 .toolbar-divider {
     width: 1px;
     height: 22px;
+
     background: #e5e7eb;
+
     margin: 0 4px;
 }
 
 
+/* =====================================================
+   BUBBLE TOOLBAR
+   ===================================================== */
+
 .editor-bubble-toolbar {
     display: flex;
-    align-items: center;
-    gap: 2px;
-    padding: 5px;
-    background: #202124;
-    border-radius: 9px;
-    box-shadow:
-        0 8px 30px rgba(
-            0,
-            0,
-            0,
-            0.2
-        );
-}
 
+    align-items: center;
+
+    gap: 2px;
+
+    padding: 5px;
+
+    background: #202124;
+
+    border-radius: 9px;
+
+    box-shadow:
+        0 8px 30px
+        rgba(0, 0, 0, 0.2);
+}
 
 .editor-bubble-toolbar button {
     color: white;
 }
-
 
 .editor-bubble-toolbar button:hover {
     background: #3c4043;
 }
 
 
-.tiptap-editor img {
-    max-width: 100%;
-    height: auto;
-    border-radius: 8px;
-}
-
+/* =====================================================
+   VIDEO
+   ===================================================== */
 
 .article-video {
     width: 100%;
+
     margin: 24px 0;
+
     aspect-ratio: 16 / 9;
+
     overflow: hidden;
+
     border-radius: 10px;
+
     background: #000;
 }
-
 
 .article-video iframe {
     width: 100%;
     height: 100%;
+
     border: 0;
 }
 
 
+/* =====================================================
+   IMAGE SLIDER
+   ===================================================== */
+
 .article-image-slider {
     display: flex;
+
     gap: 12px;
+
     overflow-x: auto;
+
     padding: 8px 0 16px;
+
     scroll-snap-type: x mandatory;
 }
 
-
 .article-image-slider img {
     flex: 0 0 80%;
+
     max-width: 80%;
+
     object-fit: cover;
+
     scroll-snap-align: center;
 }
 
 
-.ProseMirror
-    [data-type="video"] {
+/* =====================================================
+   TIPTAP CUSTOM NODES
+   ===================================================== */
+
+.ProseMirror [data-type="video"] {
     position: relative;
+
     cursor: pointer;
 }
 
+.ProseMirror [data-type="video"]:hover {
+    outline: 2px solid #d1d5db;
+}
 
-.ProseMirror
-    [data-type="image-slider"] {
-    border: 1px dashed #d1d5db;
+.ProseMirror [data-type="image-slider"] {
     padding: 10px;
+
+    border: 1px dashed #d1d5db;
+
     border-radius: 10px;
 }
 
 
-.ProseMirror
-    [data-type="video"]:hover {
-    outline: 2px solid #d1d5db;
+/* =====================================================
+   MOBILE
+   ===================================================== */
+
+@media (max-width: 900px) {
+
+    .admin-sidebar {
+        width: 250px;
+        min-width: 250px;
+    }
+
+    .metadata {
+        padding:
+            20px 30px 10px;
+    }
+
+    .admin-editor {
+        padding:
+            20px 30px 100px;
+    }
+
+    .admin-header {
+        padding:
+            0 18px;
+    }
+
+}
+
+
+@media (max-width: 700px) {
+
+    .admin-sidebar {
+        width: 220px;
+        min-width: 220px;
+    }
+
+    .metadata {
+        padding:
+            18px 20px 10px;
+    }
+
+    .admin-editor {
+        padding:
+            20px 20px 80px;
+    }
+
+    .article-title {
+        font-size: 26px;
+    }
+
+    .admin-header-title {
+        max-width: 220px;
+    }
+
+    .admin-status {
+        display: none;
+    }
+
+    .article-date {
+        display: none;
+    }
+
+}
+
+
+@media (max-width: 550px) {
+
+    .admin-sidebar {
+        width: 190px;
+        min-width: 190px;
+    }
+
+    .metadata {
+        padding:
+            15px 15px 8px;
+    }
+
+    .admin-editor {
+        padding:
+            15px 15px 60px;
+    }
+
+    .article-name {
+        font-size: 11px;
+    }
+
+    .article-topic-header {
+        font-size: 12px;
+    }
+
+    .article-year-header {
+        font-size: 10px;
+    }
+
 }

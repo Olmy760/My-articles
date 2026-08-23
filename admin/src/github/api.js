@@ -7,17 +7,24 @@ import {
 } from "./auth";
 
 
+/* =========================================================
+   HEADERS
+   ========================================================= */
+
 function headers() {
 
     const token = getToken();
 
     if (!token) {
+
         throw new Error(
             "GitHub: пользователь не авторизован"
         );
+
     }
 
     return {
+
         Authorization:
             `Bearer ${token}`,
 
@@ -29,9 +36,15 @@ function headers() {
 
         "Content-Type":
             "application/json"
+
     };
+
 }
 
+
+/* =========================================================
+   PATH
+   ========================================================= */
 
 function encodePath(path) {
 
@@ -41,24 +54,32 @@ function encodePath(path) {
             encodeURIComponent
         )
         .join("/");
+
 }
 
 
-/*
- * Получить список статей.
- */
-export async function getArticles() {
+/* =========================================================
+   GET GITHUB DIRECTORY
+   ========================================================= */
+
+async function getDirectory(
+    path
+) {
 
     const response =
-    await fetch(
-        `${GITHUB_API}/repos/` +
-        `${REPO_OWNER}/${REPO_NAME}/contents/_posts` +
-        `?ref=${REPO_BRANCH}`,
-        {
-            headers: headers(),
-            cache: "no-store"
-        }
-    );
+        await fetch(
+            `${GITHUB_API}/repos/` +
+            `${REPO_OWNER}/${REPO_NAME}/contents/` +
+            `${encodePath(path)}` +
+            `?ref=${REPO_BRANCH}`,
+            {
+                headers:
+                    headers(),
+
+                cache:
+                    "no-store"
+            }
+        );
 
 
     if (!response.ok) {
@@ -71,31 +92,209 @@ export async function getArticles() {
     }
 
 
-    const files =
+    const data =
         await response.json();
 
 
-    return files
-        .filter(
-            file =>
-                file.type === "file" &&
-                file.name.endsWith(".md")
-        )
-        .sort(
-            (a, b) =>
-                b.name.localeCompare(
-                    a.name
-                )
+    if (!Array.isArray(data)) {
+
+        throw new Error(
+            `GitHub: путь "${path}" не является директорией`
         );
+
+    }
+
+
+    return data;
+
 }
 
 
-/*
- * Получить конкретный файл.
- *
- * ВАЖНО:
- * Здесь GitHub возвращает актуальный SHA.
- */
+/* =========================================================
+   GET ARTICLES
+   =========================================================
+
+   Структура:
+
+   _posts/
+       ML/
+           2026/
+               article.md
+
+       C++/
+           2026/
+               article.md
+
+       TTS/
+           2026/
+               article.md
+*/
+
+
+export async function getArticles() {
+
+    const articles = [];
+
+
+    /*
+     * Рекурсивно обходим _posts.
+     */
+
+    async function scanDirectory(
+        path
+    ) {
+
+        const files =
+            await getDirectory(
+                path
+            );
+
+
+        for (
+            const file of files
+        ) {
+
+            /*
+             * Markdown-файл.
+             */
+
+            if (
+                file.type === "file" &&
+                file.name
+                    .toLowerCase()
+                    .endsWith(".md")
+            ) {
+
+                articles.push({
+
+                    path:
+                        file.path,
+
+                    name:
+                        file.name,
+
+                    sha:
+                        file.sha
+
+                });
+
+                continue;
+
+            }
+
+
+            /*
+             * Директория.
+             */
+
+            if (
+                file.type === "dir"
+            ) {
+
+                await scanDirectory(
+                    file.path
+                );
+
+            }
+
+        }
+
+    }
+
+
+    await scanDirectory(
+        "_posts"
+    );
+
+
+    /*
+     * Сортировка:
+     *
+     * сначала новые даты,
+     * затем название.
+     */
+
+    articles.sort(
+        (a, b) => {
+
+            const dateA =
+                extractDateFromPath(
+                    a.path
+                );
+
+            const dateB =
+                extractDateFromPath(
+                    b.path
+                );
+
+
+            const dateCompare =
+                dateB.localeCompare(
+                    dateA
+                );
+
+
+            if (
+                dateCompare !== 0
+            ) {
+
+                return dateCompare;
+
+            }
+
+
+            return a.name.localeCompare(
+                b.name,
+                "ru"
+            );
+
+        }
+    );
+
+
+    console.log(
+        "GitHub articles:",
+        articles
+    );
+
+
+    return articles;
+
+}
+
+
+/* =========================================================
+   EXTRACT DATE FROM PATH
+   ========================================================= */
+
+function extractDateFromPath(
+    path
+) {
+
+    const filename =
+        path
+            .split("/")
+            .pop() || "";
+
+
+    const match =
+        filename.match(
+            /^(\d{4}-\d{2}-\d{2})/
+        );
+
+
+    return (
+        match?.[1] ||
+        ""
+    );
+
+}
+
+
+/* =========================================================
+   GET ARTICLE
+   ========================================================= */
+
 export async function getArticle(
     path
 ) {
@@ -108,7 +307,10 @@ export async function getArticle(
             `?ref=${REPO_BRANCH}`,
             {
                 headers:
-                    headers()
+                    headers(),
+
+                cache:
+                    "no-store"
             }
         );
 
@@ -124,36 +326,54 @@ export async function getArticle(
 
 
     return response.json();
+
 }
 
 
-/*
- * Получить содержимое статьи.
- */
+/* =========================================================
+   GET ARTICLE CONTENT
+   ========================================================= */
+
 export async function getArticleContent(
     path
 ) {
 
     const file =
-        await getArticle(path);
+        await getArticle(
+            path
+        );
+
+
+    if (
+        !file ||
+        !file.content
+    ) {
+
+        throw new Error(
+            "GitHub: содержимое статьи не найдено"
+        );
+
+    }
 
 
     return {
+
         ...file,
 
         content:
             decodeBase64(
                 file.content
             )
+
     };
+
 }
 
 
-/*
- * Создать статью.
- *
- * SHA здесь НЕ нужен.
- */
+/* =========================================================
+   CREATE ARTICLE
+   ========================================================= */
+
 export async function createArticle(
     path,
     content,
@@ -165,23 +385,29 @@ export async function createArticle(
         content,
         message
     );
+
 }
 
 
-/*
- * Обновить статью.
- *
- * Перед PUT самостоятельно получаем
- * актуальный SHA из GitHub.
- */
+/* =========================================================
+   UPDATE ARTICLE
+   ========================================================= */
+
 export async function updateArticle(
     path,
     content,
     message
 ) {
 
+    /*
+     * Получаем САМЫЙ АКТУАЛЬНЫЙ SHA
+     * непосредственно перед обновлением.
+     */
+
     const file =
-        await getArticle(path);
+        await getArticle(
+            path
+        );
 
 
     if (!file.sha) {
@@ -199,12 +425,14 @@ export async function updateArticle(
         message,
         file.sha
     );
+
 }
 
 
-/*
- * Универсальная запись файла.
- */
+/* =========================================================
+   PUT FILE
+   ========================================================= */
+
 async function putFile(
     path,
     content,
@@ -217,7 +445,9 @@ async function putFile(
         message,
 
         content:
-            encodeBase64(content),
+            encodeBase64(
+                content
+            ),
 
         branch:
             REPO_BRANCH
@@ -226,8 +456,10 @@ async function putFile(
 
 
     /*
-     * SHA передаём только при обновлении.
+     * SHA нужен только
+     * для существующего файла.
      */
+
     if (sha) {
 
         body.sha =
@@ -240,8 +472,11 @@ async function putFile(
         "GitHub PUT:",
         {
             path,
+
             sha:
-                body.sha || "(new file)"
+                sha ||
+                "(new file)"
+
         }
     );
 
@@ -252,7 +487,9 @@ async function putFile(
             `${REPO_OWNER}/${REPO_NAME}/contents/` +
             `${encodePath(path)}`,
             {
-                method: "PUT",
+
+                method:
+                    "PUT",
 
                 headers:
                     headers(),
@@ -261,37 +498,47 @@ async function putFile(
                     JSON.stringify(
                         body
                     )
+
             }
         );
 
 
     if (!response.ok) {
 
+        const errorText =
+            await response.text();
+
+
         throw new Error(
             `GitHub ${response.status}: ` +
-            await response.text()
+            errorText
         );
 
     }
 
 
     return response.json();
+
 }
 
 
-/*
- * Удалить статью.
- *
- * SHA получаем непосредственно
- * перед DELETE.
- */
+/* =========================================================
+   DELETE ARTICLE
+   ========================================================= */
+
 export async function deleteArticle(
     path,
     message
 ) {
 
+    /*
+     * Получаем свежий SHA.
+     */
+
     const file =
-        await getArticle(path);
+        await getArticle(
+            path
+        );
 
 
     if (!file.sha) {
@@ -307,8 +554,10 @@ export async function deleteArticle(
         "GitHub DELETE:",
         {
             path,
+
             sha:
                 file.sha
+
         }
     );
 
@@ -319,7 +568,9 @@ export async function deleteArticle(
             `${REPO_OWNER}/${REPO_NAME}/contents/` +
             `${encodePath(path)}`,
             {
-                method: "DELETE",
+
+                method:
+                    "DELETE",
 
                 headers:
                     headers(),
@@ -336,6 +587,7 @@ export async function deleteArticle(
                             REPO_BRANCH
 
                     })
+
             }
         );
 
@@ -351,78 +603,24 @@ export async function deleteArticle(
 
 
     return response.json();
+
 }
 
 
-/*
- * Base64 → UTF-8.
- */
-function decodeBase64(
-    value
-) {
-
-    const binary =
-        atob(
-            value.replace(
-                /\n/g,
-                ""
-            )
-        );
-
-
-    const bytes =
-        Uint8Array.from(
-            binary,
-            character =>
-                character.charCodeAt(0)
-        );
-
-
-    return new TextDecoder()
-        .decode(bytes);
-}
-
-
-/*
- * UTF-8 → Base64.
- */
-function encodeBase64(
-    value
-) {
-
-    const bytes =
-        new TextEncoder()
-            .encode(value);
-
-
-    let binary = "";
-
-
-    for (
-        const byte of bytes
-    ) {
-
-        binary +=
-            String.fromCharCode(
-                byte
-            );
-
-    }
-
-
-    return btoa(
-        binary
-    );
-}
+/* =========================================================
+   UPLOAD IMAGE
+   ========================================================= */
 
 export async function uploadImage(
     file
 ) {
 
     if (!file) {
+
         throw new Error(
             "Файл изображения не выбран"
         );
+
     }
 
 
@@ -431,9 +629,11 @@ export async function uploadImage(
             "image/"
         )
     ) {
+
         throw new Error(
             "Можно загружать только изображения"
         );
+
     }
 
 
@@ -456,10 +656,13 @@ export async function uploadImage(
 
 
     const bytes =
-        new Uint8Array(buffer);
+        new Uint8Array(
+            buffer
+        );
 
 
-    let binary = "";
+    let binary =
+        "";
 
 
     const chunkSize =
@@ -472,21 +675,24 @@ export async function uploadImage(
         i += chunkSize
     ) {
 
-        binary += String.fromCharCode(
-            ...bytes.subarray(
-                i,
-                Math.min(
-                    i + chunkSize,
-                    bytes.length
+        binary +=
+            String.fromCharCode(
+                ...bytes.subarray(
+                    i,
+                    Math.min(
+                        i + chunkSize,
+                        bytes.length
+                    )
                 )
-            )
-        );
+            );
 
     }
 
 
     const content =
-        btoa(binary);
+        btoa(
+            binary
+        );
 
 
     const response =
@@ -495,13 +701,16 @@ export async function uploadImage(
             `${REPO_OWNER}/${REPO_NAME}/contents/` +
             `${encodePath(path)}`,
             {
-                method: "PUT",
+
+                method:
+                    "PUT",
 
                 headers:
                     headers(),
 
                 body:
                     JSON.stringify({
+
                         message:
                             `Upload image: ${filename}`,
 
@@ -509,7 +718,9 @@ export async function uploadImage(
 
                         branch:
                             REPO_BRANCH
+
                     })
+
             }
         );
 
@@ -525,15 +736,22 @@ export async function uploadImage(
 
 
     return {
+
         path,
 
         url:
             `/${path}`,
 
         filename
+
     };
+
 }
 
+
+/* =========================================================
+   IMAGE EXTENSION
+   ========================================================= */
 
 function getImageExtension(
     file
@@ -547,12 +765,14 @@ function getImageExtension(
 
 
     const allowed = [
+
         "png",
         "jpg",
         "jpeg",
         "gif",
         "webp",
         "avif"
+
     ];
 
 
@@ -561,21 +781,36 @@ function getImageExtension(
             extension
         )
     ) {
+
         return extension;
+
     }
 
 
     const mimeMap = {
-        "image/png": "png",
-        "image/jpeg": "jpg",
-        "image/gif": "gif",
-        "image/webp": "webp",
-        "image/avif": "avif"
+
+        "image/png":
+            "png",
+
+        "image/jpeg":
+            "jpg",
+
+        "image/gif":
+            "gif",
+
+        "image/webp":
+            "webp",
+
+        "image/avif":
+            "avif"
+
     };
 
 
     const mapped =
-        mimeMap[file.type];
+        mimeMap[
+            file.type
+        ];
 
 
     if (!mapped) {
@@ -588,8 +823,13 @@ function getImageExtension(
 
 
     return mapped;
+
 }
 
+
+/* =========================================================
+   RANDOM STRING
+   ========================================================= */
 
 function randomString(
     length
@@ -599,7 +839,8 @@ function randomString(
         "abcdefghijklmnopqrstuvwxyz0123456789";
 
 
-    let result = "";
+    let result =
+        "";
 
 
     for (
@@ -620,4 +861,76 @@ function randomString(
 
 
     return result;
+
+}
+
+
+/* =========================================================
+   BASE64 → UTF-8
+   ========================================================= */
+
+function decodeBase64(
+    value
+) {
+
+    const binary =
+        atob(
+            value.replace(
+                /\n/g,
+                ""
+            )
+        );
+
+
+    const bytes =
+        Uint8Array.from(
+            binary,
+            character =>
+                character.charCodeAt(0)
+        );
+
+
+    return new TextDecoder()
+        .decode(
+            bytes
+        );
+
+}
+
+
+/* =========================================================
+   UTF-8 → BASE64
+   ========================================================= */
+
+function encodeBase64(
+    value
+) {
+
+    const bytes =
+        new TextEncoder()
+            .encode(
+                value
+            );
+
+
+    let binary =
+        "";
+
+
+    for (
+        const byte of bytes
+    ) {
+
+        binary +=
+            String.fromCharCode(
+                byte
+            );
+
+    }
+
+
+    return btoa(
+        binary
+    );
+
 }

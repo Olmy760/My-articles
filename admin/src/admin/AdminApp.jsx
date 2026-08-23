@@ -53,22 +53,41 @@ import {
 
 import "./admin.css";
 
+
+/* =========================================================
+   CONSTANTS
+   ========================================================= */
+
 const EMPTY_FRONT_MATTER = {
     title: "",
     description: "",
     date: "",
+    topic: "Other",
     tags: [],
     image: ""
 };
 
 
+const TOPICS = [
+    "ML",
+    "C++",
+    "Algorithms",
+    "TTS",
+    "Other"
+];
+
+
+/* =========================================================
+   ADMIN APP
+   ========================================================= */
+
 export default function AdminApp() {
-    
 
     const [user, setUser] =
         useState(null);
 
-    const [saving, setSaving] = useState(false);
+    const [saving, setSaving] =
+        useState(false);
 
     const [authLoading, setAuthLoading] =
         useState(true);
@@ -81,7 +100,8 @@ export default function AdminApp() {
 
     const [metadata, setMetadata] =
         useState({
-            ...EMPTY_FRONT_MATTER
+            ...EMPTY_FRONT_MATTER,
+            tags: []
         });
 
     const [status, setStatus] =
@@ -90,308 +110,400 @@ export default function AdminApp() {
     const [loadingArticles, setLoadingArticles] =
         useState(false);
 
+    const [openTopics, setOpenTopics] =
+        useState({});
+
+    const [openYears, setOpenYears] =
+        useState({});
+
+
+    /* =====================================================
+       EDITOR
+       ===================================================== */
 
     const editor =
         useEditor({
 
             extensions: [
 
-    StarterKit,
+                StarterKit,
 
-    Underline,
+                Underline,
 
-    Image.configure({
-        allowBase64: false
-    }),
+                Image.configure({
+                    allowBase64: false
+                }),
 
-    Link.configure({
-        openOnClick: false,
-        autolink: true,
-        linkOnPaste: true
-    }),
+                Link.configure({
+                    openOnClick: false,
+                    autolink: true,
+                    linkOnPaste: true
+                }),
 
-    VideoNode,
+                VideoNode,
 
-    SliderNode,
+                SliderNode,
 
-    Placeholder.configure({
-        placeholder:
-            "Начните писать..."
-    }),
+                Placeholder.configure({
+                    placeholder:
+                        "Начните писать..."
+                }),
 
-    Markdown.configure({
-        html: true,
-        transformPastedText: true,
-        transformCopiedText: true
-    })
-],
+                Markdown.configure({
+                    html: true,
+                    transformPastedText: true,
+                    transformCopiedText: true
+                })
+
+            ],
 
             content: "",
 
             editorProps: {
 
-    attributes: {
-        class:
-            "tiptap-editor"
-    },
+                attributes: {
+                    class:
+                        "tiptap-editor"
+                },
 
-    handlePaste(
-    view,
-    event
-) {
 
-    const files =
-        Array.from(
-            event.clipboardData?.files || []
-        );
+                handlePaste(
+                    view,
+                    event
+                ) {
 
-    const image =
-        files.find(
-            file =>
-                file.type.startsWith(
-                    "image/"
-                )
-        );
+                    const files =
+                        Array.from(
+                            event
+                                .clipboardData
+                                ?.files || []
+                        );
 
-    if (!image) {
-        return false;
-    }
 
-    uploadImage(image)
-        .then(result => {
+                    const image =
+                        files.find(
+                            file =>
+                                file.type.startsWith(
+                                    "image/"
+                                )
+                        );
 
-            editor
-                ?.chain()
-                .focus()
-                .setImage({
-                    src:
-                        getImageUrl(
-                            result.path
-                        )
-                })
-                .run();
 
-        })
-        .catch(error => {
+                    if (!image) {
+                        return false;
+                    }
 
-            console.error(error);
 
-            setStatus(
-                `Ошибка загрузки: ${error.message}`
-            );
+                    uploadImage(image)
+
+                        .then(result => {
+
+                            editor
+                                ?.chain()
+                                .focus()
+                                .setImage({
+                                    src:
+                                        getImageUrl(
+                                            result.path
+                                        )
+                                })
+                                .run();
+
+
+                            setStatus(
+                                "Изображение добавлено ✓"
+                            );
+
+                        })
+
+                        .catch(error => {
+
+                            console.error(error);
+
+                            setStatus(
+                                `Ошибка загрузки: ${error.message}`
+                            );
+
+                        });
+
+
+                    return true;
+
+                }
+
+            }
+
         });
 
-    return true;
-}
-}
 
-        });
+    /* =========================================================
+       IMAGE URL
+       ========================================================= */
 
     function getImageUrl(path) {
+
         return (
             `https://raw.githubusercontent.com/` +
             `Olmy760/My-articles/` +
             `own_redactor/${path}`
         );
+
     }
+
+
+    /* =========================================================
+       INSERT IMAGE
+       ========================================================= */
 
     async function insertImage() {
 
-    const input =
-        document.createElement("input");
+        const input =
+            document.createElement("input");
 
-    input.type = "file";
 
-    input.accept =
-        "image/png,image/jpeg,image/gif,image/webp,image/avif";
+        input.type =
+            "file";
 
-    input.onchange = async () => {
 
-        const file =
-            input.files?.[0];
+        input.accept =
+            "image/png,image/jpeg,image/gif,image/webp,image/avif";
 
-        if (!file) {
+
+        input.onchange =
+            async () => {
+
+                const file =
+                    input.files?.[0];
+
+
+                if (!file) {
+                    return;
+                }
+
+
+                try {
+
+                    setStatus(
+                        "Загрузка изображения..."
+                    );
+
+
+                    const result =
+                        await uploadImage(
+                            file
+                        );
+
+
+                    editor
+                        ?.chain()
+                        .focus()
+                        .setImage({
+                            src:
+                                getImageUrl(
+                                    result.path
+                                )
+                        })
+                        .run();
+
+
+                    setStatus(
+                        "Изображение добавлено ✓"
+                    );
+
+                } catch (error) {
+
+                    console.error(error);
+
+                    setStatus(
+                        `Ошибка загрузки: ${error.message}`
+                    );
+
+                }
+
+            };
+
+
+        input.click();
+
+    }
+
+
+    /* =========================================================
+       INSERT VIDEO
+       ========================================================= */
+
+    function insertVideo() {
+
+        const url =
+            window.prompt(
+                "Вставьте ссылку на YouTube, VK Видео или Rutube:"
+            );
+
+
+        if (!url) {
             return;
         }
 
-        try {
 
-            setStatus(
-                "Загрузка изображения..."
-            );
-
-            const result =
-                await uploadImage(file);
-
+        const inserted =
             editor
                 ?.chain()
                 .focus()
-                .setImage({
-                    src:
-                        getImageUrl(
-                            result.path
-                        )
-                })
+                .setVideo(
+                    url.trim()
+                )
                 .run();
 
-            setStatus(
-                "Изображение добавлено ✓"
-            );
 
-        } catch (error) {
-
-            console.error(error);
+        if (!inserted) {
 
             setStatus(
-                `Ошибка загрузки: ${error.message}`
+                "Не удалось определить видеосервис"
             );
+
+            return;
+
         }
-    };
 
-    input.click();
-}
-
-function insertVideo() {
-
-    const url =
-        window.prompt(
-            "Вставьте ссылку на YouTube, VK Видео или Rutube:"
-        );
-
-    if (!url) {
-        return;
-    }
-
-    const inserted =
-        editor
-            ?.chain()
-            .focus()
-            .setVideo(url)
-            .run();
-
-    if (!inserted) {
 
         setStatus(
-            "Не удалось определить видеосервис"
+            "Видео добавлено ✓"
         );
 
-        return;
     }
 
-    setStatus(
-        "Видео добавлено ✓"
-    );
-}
+
+    /* =========================================================
+       INSERT SLIDER
+       ========================================================= */
 
     async function insertSlider() {
 
         const input =
             document.createElement("input");
 
-        input.type = "file";
+
+        input.type =
+            "file";
+
 
         input.accept =
             "image/png,image/jpeg,image/gif,image/webp,image/avif";
 
-        input.multiple = true;
+
+        input.multiple =
+            true;
 
 
-        input.onchange = async () => {
+        input.onchange =
+            async () => {
 
-            const files =
-                Array.from(
-                    input.files || []
-                );
-
-            if (files.length < 2) {
-
-                setStatus(
-                    "Выберите минимум 2 изображения"
-                );
-
-                return;
-            }
+                const files =
+                    Array.from(
+                        input.files || []
+                    );
 
 
-            try {
-
-                setStatus(
-                    `Загрузка 0/${files.length}...`
-                );
-
-
-                const results = [];
-
-                for (
-                    let i = 0;
-                    i < files.length;
-                    i++
-                ) {
-
-                    const result =
-                        await uploadImage(
-                            files[i]
-                        );
-
-                    results.push(result);
+                if (files.length < 2) {
 
                     setStatus(
-                        `Загрузка ${i + 1}/${files.length}...`
+                        "Выберите минимум 2 изображения"
                     );
+
+                    return;
+
                 }
 
 
-                const images =
-                    results.map(
-                        result => ({
-                            src:
-                                getImageUrl(
-                                    result.path
-                                )
-                        })
+                try {
+
+                    const results = [];
+
+
+                    setStatus(
+                        `Загрузка 0/${files.length}...`
                     );
 
 
-                const inserted =
-                    editor
-                        ?.chain()
-                        .focus()
-                        .setImageSlider(
-                            images
-                        )
-                        .run();
+                    for (
+                        let i = 0;
+                        i < files.length;
+                        i++
+                    ) {
+
+                        const result =
+                            await uploadImage(
+                                files[i]
+                            );
 
 
-                if (!inserted) {
+                        results.push(
+                            result
+                        );
 
-                    throw new Error(
-                        "Не удалось вставить слайдер"
+
+                        setStatus(
+                            `Загрузка ${i + 1}/${files.length}...`
+                        );
+
+                    }
+
+
+                    const images =
+                        results.map(
+                            result => ({
+                                src:
+                                    getImageUrl(
+                                        result.path
+                                    )
+                            })
+                        );
+
+
+                    const inserted =
+                        editor
+                            ?.chain()
+                            .focus()
+                            .setImageSlider(
+                                images
+                            )
+                            .run();
+
+
+                    if (!inserted) {
+
+                        throw new Error(
+                            "Не удалось вставить слайдер"
+                        );
+
+                    }
+
+
+                    setStatus(
+                        `Слайдер добавлен: ${images.length} изображений ✓`
                     );
+
+                } catch (error) {
+
+                    console.error(error);
+
+                    setStatus(
+                        `Ошибка загрузки: ${error.message}`
+                    );
+
                 }
 
-
-                setStatus(
-                    `Слайдер добавлен: ${images.length} изображений ✓`
-                );
-
-            } catch (error) {
-
-                console.error(error);
-
-                setStatus(
-                    `Ошибка загрузки: ${error.message}`
-                );
-            }
-        };
+            };
 
 
         input.click();
+
     }
 
 
-    /* =====================================================
+    /* =========================================================
        AUTH
-       ===================================================== */
+       ========================================================= */
 
     useEffect(() => {
 
@@ -530,7 +642,8 @@ function insertVideo() {
         setCurrentArticle(null);
 
         setMetadata({
-            ...EMPTY_FRONT_MATTER
+            ...EMPTY_FRONT_MATTER,
+            tags: []
         });
 
         editor?.commands.clearContent();
@@ -540,9 +653,9 @@ function insertVideo() {
     }
 
 
-    /* =====================================================
-       ARTICLES
-       ===================================================== */
+    /* =========================================================
+       LOAD ARTICLES
+       ========================================================= */
 
     async function loadArticles() {
 
@@ -555,10 +668,24 @@ function insertVideo() {
                 await getArticles();
 
 
-            setArticles(
-                files
-            );
+            const safeFiles =
+                Array.isArray(files)
+                    ? files
+                    : [];
 
+
+            const normalized =
+                safeFiles.map(
+                    article =>
+                        normalizeArticle(
+                            article
+                        )
+                );
+
+
+            setArticles(
+                normalized
+            );
 
         } catch (error) {
 
@@ -577,68 +704,120 @@ function insertVideo() {
     }
 
 
-    async function openArticle(article) {
-    if (!editor) {
-        return;
+    /* =========================================================
+       OPEN ARTICLE
+       ========================================================= */
+
+    async function openArticle(
+        article
+    ) {
+
+        if (!editor) {
+            return;
+        }
+
+
+        try {
+
+            setStatus(
+                "Открытие..."
+            );
+
+
+            const file =
+                await getArticleContent(
+                    article.path
+                );
+
+
+            console.log(
+                "GitHub file:",
+                file
+            );
+
+
+            const parsed =
+                parseFrontMatter(
+                    file.content
+                );
+
+
+            const parsedTopic =
+                parsed.frontMatter.topic;
+
+
+            const topic =
+                TOPICS.includes(
+                    parsedTopic
+                )
+                    ? parsedTopic
+                    : article.topic ||
+                      "Other";
+
+
+            const tags =
+                Array.isArray(
+                    parsed.frontMatter.tags
+                )
+                    ? parsed.frontMatter.tags
+                    : [];
+
+
+            setMetadata({
+
+                ...EMPTY_FRONT_MATTER,
+
+                ...parsed.frontMatter,
+
+                topic,
+
+                tags
+
+            });
+
+
+            editor.commands.setContent(
+                parsed.content,
+                {
+                    emitUpdate: false
+                }
+            );
+
+
+            setCurrentArticle({
+
+                path:
+                    article.path,
+
+                name:
+                    article.name,
+
+                sha:
+                    file.sha
+
+            });
+
+
+            setStatus(
+                "Статья открыта"
+            );
+
+        } catch (error) {
+
+            console.error(error);
+
+            setStatus(
+                `Ошибка: ${error.message}`
+            );
+
+        }
+
     }
 
-    try {
-        setStatus("Открытие...");
 
-        const file =
-            await getArticleContent(article.path);
-
-        console.log("GitHub file:", file);
-
-        const parsed =
-            parseFrontMatter(file.content);
-
-        setMetadata({
-            ...EMPTY_FRONT_MATTER,
-            ...parsed.frontMatter,
-            tags: Array.isArray(parsed.frontMatter.tags)
-                ? parsed.frontMatter.tags
-                : []
-        });
-
-        editor.commands.setContent(
-    parsed.content,
-    {
-        emitUpdate: false
-    }
-);
-
-console.log(
-    "Loaded editor JSON:",
-    editor.getJSON()
-);
-
-        setCurrentArticle({
-            path: article.path,
-            name: article.name,
-            sha: file.sha
-        });
-
-        console.log(
-            "Current article:",
-            {
-                path: article.path,
-                sha: file.sha
-            }
-        );
-
-        setStatus("Статья открыта");
-
-    } catch (error) {
-
-        console.error(error);
-
-        setStatus(
-            `Ошибка: ${error.message}`
-        );
-    }
-}
-
+    /* =========================================================
+       NEW ARTICLE
+       ========================================================= */
 
     function createNewArticle() {
 
@@ -650,7 +829,12 @@ console.log(
             ...EMPTY_FRONT_MATTER,
 
             date:
-                today()
+                today(),
+
+            topic:
+                "Other",
+
+            tags: []
 
         });
 
@@ -665,184 +849,274 @@ console.log(
     }
 
 
-    /* =====================================================
-       SAVE
-       ===================================================== */
+    /* =========================================================
+       SAVE ARTICLE
+       ========================================================= */
 
     async function saveArticle() {
 
-    if (!editor) {
-        return;
-    }
+        if (!editor) {
+            return;
+        }
 
-    if (saving) {
-        return;
-    }
 
-    if (!metadata.title.trim()) {
-        setStatus("Введите название");
-        return;
-    }
+        if (saving) {
+            return;
+        }
 
-    try {
 
-        setSaving(true);
+        const title =
+            String(
+                metadata.title || ""
+            ).trim();
 
-        setStatus("Сохранение...");
 
-        const markdown =
-            buildMarkdown(
-                editor,
-                metadata
+        if (!title) {
+
+            setStatus(
+                "Введите название"
+            );
+
+            return;
+
+        }
+
+
+        try {
+
+            setSaving(true);
+
+
+            setStatus(
+                "Сохранение..."
             );
 
 
-        /* =========================================
-           НОВАЯ СТАТЬЯ
-           ========================================= */
+            const safeMetadata = {
 
-        if (!currentArticle) {
+                ...EMPTY_FRONT_MATTER,
 
-            const path =
-                createArticlePath(
-                    metadata.title
+                ...metadata,
+
+                title,
+
+                topic:
+                    metadata.topic ||
+                    "Other",
+
+                tags:
+                    Array.isArray(
+                        metadata.tags
+                    )
+                        ? metadata.tags
+                        : []
+
+            };
+
+
+            const markdown =
+                buildMarkdown(
+                    editor,
+                    safeMetadata
                 );
 
+
+            /* =================================================
+               NEW ARTICLE
+               ================================================= */
+
+            if (!currentArticle) {
+
+                const path =
+                    createArticlePath(
+                        safeMetadata.title,
+                        safeMetadata.topic,
+                        safeMetadata.date
+                    );
+
+
+                const result =
+                    await createArticle(
+                        path,
+                        markdown,
+                        `Create article: ${safeMetadata.title}`
+                    );
+
+
+                setCurrentArticle({
+
+                    path,
+
+                    name:
+                        path
+                            .split("/")
+                            .pop(),
+
+                    sha:
+                        result?.content?.sha ||
+                        null
+
+                });
+
+
+                await loadArticles();
+
+
+                setStatus(
+                    "Создано ✓"
+                );
+
+
+                return;
+
+            }
+
+
+            /* =================================================
+               UPDATE ARTICLE
+               ================================================= */
 
             const result =
-                await createArticle(
-                    path,
+                await updateArticle(
+                    currentArticle.path,
                     markdown,
-                    `Create article: ${metadata.title}`
+                    `Update article: ${safeMetadata.title}`
                 );
 
 
-            setCurrentArticle({
-                path,
-                name:
-                    path.split("/").pop(),
-                sha:
-                    result.content.sha
-            });
+            setCurrentArticle(
+                previous => {
+
+                    if (!previous) {
+                        return previous;
+                    }
+
+
+                    return {
+
+                        ...previous,
+
+                        sha:
+                            result?.content?.sha ||
+                            previous.sha
+
+                    };
+
+                }
+            );
 
 
             await loadArticles();
 
 
-            setStatus("Создано ✓");
-
-            return;
-        }
-
-
-        /* =========================================
-           СУЩЕСТВУЮЩАЯ СТАТЬЯ
-           ========================================= */
-
-        const result =
-            await updateArticle(
-                currentArticle.path,
-                markdown,
-                `Update article: ${metadata.title}`
+            setStatus(
+                "Сохранено ✓"
             );
 
+        } catch (error) {
 
-        /*
-         * Обновляем SHA в состоянии.
-         *
-         * Это полезно для текущей сессии,
-         * хотя updateArticle() сам получает
-         * свежий SHA из GitHub.
-         */
+            console.error(error);
 
-        setCurrentArticle(
-            previous => ({
-                ...previous,
-                sha:
-                    result.content.sha
-            })
-        );
+            setStatus(
+                `Ошибка: ${error.message}`
+            );
 
+        } finally {
 
-        /*
-         * Обновляем список статей слева.
-         */
+            setSaving(false);
 
-        await loadArticles();
-
-
-        setStatus("Сохранено ✓");
-
-    } catch (error) {
-
-        console.error(error);
-
-        setStatus(
-            `Ошибка: ${error.message}`
-        );
-
-    } finally {
-
-        setSaving(false);
+        }
 
     }
-}
 
 
-    /* =====================================================
+    /* =========================================================
        DELETE
-       ===================================================== */
+       ========================================================= */
 
     async function handleDelete() {
 
-    if (!currentArticle?.path) {
-        setStatus("Статья не выбрана");
-        return;
+        if (!currentArticle?.path) {
+
+            setStatus(
+                "Статья не выбрана"
+            );
+
+            return;
+
+        }
+
+
+        const title =
+            metadata.title ||
+            currentArticle.name ||
+            "статья";
+
+
+        if (
+            !window.confirm(
+                `Удалить "${title}"?`
+            )
+        ) {
+
+            return;
+
+        }
+
+
+        try {
+
+            setStatus(
+                "Удаление..."
+            );
+
+
+            await deleteArticle(
+                currentArticle.path,
+                `Delete article: ${title}`
+            );
+
+
+            setCurrentArticle(
+                null
+            );
+
+
+            setMetadata({
+
+                ...EMPTY_FRONT_MATTER,
+
+                tags: []
+
+            });
+
+
+            editor?.commands.clearContent();
+
+
+            await loadArticles();
+
+
+            setStatus(
+                "Удалено ✓"
+            );
+
+        } catch (error) {
+
+            console.error(error);
+
+            setStatus(
+                `Ошибка: ${error.message}`
+            );
+
+        }
+
     }
 
-    const title =
-        metadata.title ||
-        currentArticle.name;
 
-    if (!window.confirm(`Удалить "${title}"?`)) {
-        return;
-    }
-
-    try {
-
-        setStatus("Удаление...");
-
-        await deleteArticle(
-            currentArticle.path,
-            `Delete article: ${title}`
-        );
-
-        setCurrentArticle(null);
-
-        setMetadata({
-            ...EMPTY_FRONT_MATTER
-        });
-
-        editor?.commands.clearContent();
-
-        await loadArticles();
-
-        setStatus("Удалено ✓");
-
-    } catch (error) {
-
-        console.error(error);
-
-        setStatus(
-            `Ошибка: ${error.message}`
-        );
-    }
-}
-
-
-    /* =====================================================
+    /* =========================================================
        AUTH LOADING
-       ===================================================== */
+       ========================================================= */
 
     if (authLoading) {
 
@@ -869,9 +1143,9 @@ console.log(
     }
 
 
-    /* =====================================================
+    /* =========================================================
        LOGIN
-       ===================================================== */
+       ========================================================= */
 
     if (!user) {
 
@@ -903,9 +1177,7 @@ console.log(
                     {status && (
 
                         <div className="auth-status">
-
                             {status}
-
                         </div>
 
                     )}
@@ -919,16 +1191,29 @@ console.log(
     }
 
 
-    /* =====================================================
+    /* =========================================================
+       GROUPS
+       ========================================================= */
+
+    const articleGroups =
+        groupArticlesByTopic(
+            Array.isArray(articles)
+                ? articles
+                : []
+        );
+
+
+    /* =========================================================
        ADMIN
-       ===================================================== */
+       ========================================================= */
 
     return (
 
         <div className="admin-layout">
 
-
-            {/* SIDEBAR */}
+            {/* =================================================
+               SIDEBAR
+               ================================================= */}
 
             <aside className="admin-sidebar">
 
@@ -962,7 +1247,6 @@ console.log(
 
                 <div className="admin-articles">
 
-
                     {loadingArticles && (
 
                         <div className="articles-empty">
@@ -983,49 +1267,261 @@ console.log(
 
 
                     {!loadingArticles &&
-                        articles.map(
-                            article => (
+                        articles.length > 0 && (
 
-                                <button
-                                    key={
-                                        article.path
-                                    }
+                            <div className="article-tree">
 
-                                    className={
-                                        "admin-article " +
-                                        (
-                                            currentArticle?.path ===
-                                            article.path
-                                                ? "active"
-                                                : ""
-                                        )
-                                    }
+                                {articleGroups.map(
+                                    group => {
 
-                                    onClick={() =>
-                                        openArticle(
-                                            article
-                                        )
-                                    }
-                                >
-
-                                    {
-                                        article.name
-                                            .replace(
-                                                /\.md$/,
-                                                ""
+                                        const safeYears =
+                                            Array.isArray(
+                                                group.years
                                             )
+                                                ? group.years
+                                                : [];
+
+
+                                        const articleCount =
+                                            safeYears.reduce(
+                                                (
+                                                    total,
+                                                    yearGroup
+                                                ) =>
+                                                    total +
+                                                    (
+                                                        Array.isArray(
+                                                            yearGroup.articles
+                                                        )
+                                                            ? yearGroup.articles.length
+                                                            : 0
+                                                    ),
+                                                0
+                                            );
+
+
+                                        const topicOpen =
+                                            openTopics[
+                                                group.topic
+                                            ] !== false;
+
+
+                                        return (
+
+                                            <div
+                                                className="article-topic-group"
+                                                key={
+                                                    group.topic
+                                                }
+                                            >
+
+                                                {/* TOPIC */}
+
+                                                <button
+                                                    className="article-topic-header"
+                                                    onClick={() =>
+                                                        setOpenTopics(
+                                                            previous => ({
+                                                                ...previous,
+
+                                                                [group.topic]:
+                                                                    !topicOpen
+
+                                                            })
+                                                        )
+                                                    }
+                                                >
+
+                                                    <span className="article-tree-arrow">
+                                                        {
+                                                            topicOpen
+                                                                ? "▼"
+                                                                : "▶"
+                                                        }
+                                                    </span>
+
+
+                                                    <span>
+                                                        {
+                                                            group.topic
+                                                        }
+                                                    </span>
+
+
+                                                    <span className="article-count">
+                                                        {
+                                                            articleCount
+                                                        }
+                                                    </span>
+
+                                                </button>
+
+
+                                                {topicOpen && (
+
+                                                    <div className="article-topic-content">
+
+                                                        {safeYears.map(
+                                                            yearGroup => {
+
+                                                                const safeArticles =
+                                                                    Array.isArray(
+                                                                        yearGroup.articles
+                                                                    )
+                                                                        ? yearGroup.articles
+                                                                        : [];
+
+
+                                                                const yearKey =
+                                                                    `${group.topic}:${yearGroup.year}`;
+
+
+                                                                const yearOpen =
+                                                                    openYears[
+                                                                        yearKey
+                                                                    ] !== false;
+
+
+                                                                return (
+
+                                                                    <div
+                                                                        className="article-year-group"
+                                                                        key={
+                                                                            yearKey
+                                                                        }
+                                                                    >
+
+                                                                        {/* YEAR */}
+
+                                                                        <button
+                                                                            className="article-year-header"
+                                                                            onClick={() =>
+                                                                                setOpenYears(
+                                                                                    previous => ({
+                                                                                        ...previous,
+
+                                                                                        [yearKey]:
+                                                                                            !yearOpen
+
+                                                                                    })
+                                                                                )
+                                                                            }
+                                                                        >
+
+                                                                            <span className="article-tree-arrow">
+
+                                                                                {
+                                                                                    yearOpen
+                                                                                        ? "▼"
+                                                                                        : "▶"
+                                                                                }
+
+                                                                            </span>
+
+
+                                                                            <span>
+                                                                                {yearGroup.year}
+                                                                            </span>
+
+                                                                            <span className="article-count">
+                                                                                {yearGroup.articles.length}
+                                                                            </span>
+
+
+                                                                        </button>
+
+
+                                                                        {/* ARTICLES */}
+
+                                                                        {yearOpen && (
+
+                                                                            <div className="article-year-content">
+
+                                                                                {safeArticles.map(
+                                                                                    article => (
+
+                                                                                        <button
+
+                                                                                            key={
+                                                                                                article.path
+                                                                                            }
+
+                                                                                            className={
+                                                                                                "admin-article " +
+                                                                                                (
+                                                                                                    currentArticle?.path ===
+                                                                                                    article.path
+                                                                                                        ? "active"
+                                                                                                        : ""
+                                                                                                )
+                                                                                            }
+
+                                                                                            onClick={() =>
+                                                                                                openArticle(
+                                                                                                    article
+                                                                                                )
+                                                                                            }
+
+                                                                                        >
+
+                                                                                            <span className="article-date">
+
+                                                                                                {
+                                                                                                    formatDate(
+                                                                                                        article.date
+                                                                                                    )
+                                                                                                }
+
+                                                                                            </span>
+
+
+                                                                                            <span className="article-name">
+
+                                                                                                {
+                                                                                                    getArticleTitle(
+                                                                                                        article
+                                                                                                    )
+                                                                                                }
+
+                                                                                            </span>
+
+                                                                                        </button>
+
+                                                                                    )
+                                                                                )}
+
+                                                                            </div>
+
+                                                                        )}
+
+                                                                    </div>
+
+                                                                );
+
+                                                            }
+                                                        )}
+
+                                                    </div>
+
+                                                )}
+
+                                            </div>
+
+                                        );
+
                                     }
+                                )}
 
-                                </button>
+                            </div>
 
-                            )
                         )}
 
                 </div>
 
 
-                <div className="admin-sidebar-footer">
+                {/* FOOTER */}
 
+                <div className="admin-sidebar-footer">
 
                     <div className="admin-user">
 
@@ -1033,9 +1529,9 @@ console.log(
                             src={
                                 user.avatar_url
                             }
-
                             alt=""
                         />
+
 
                         <div>
 
@@ -1061,19 +1557,18 @@ console.log(
                         Выйти
                     </button>
 
-
                 </div>
 
             </aside>
 
 
-            {/* EDITOR */}
+            {/* =================================================
+               MAIN
+               ================================================= */}
 
             <main className="admin-main">
 
-
                 <header className="admin-header">
-
 
                     <div className="admin-header-title">
 
@@ -1089,11 +1584,8 @@ console.log(
 
                     <div className="admin-header-actions">
 
-
                         <span className="admin-status">
-
                             {status}
-
                         </span>
 
 
@@ -1112,44 +1604,55 @@ console.log(
 
 
                         <button
-    className="save-button"
-    onClick={saveArticle}
-    disabled={saving}
->
-    {saving ? "Сохранение..." : "Сохранить"}
-</button>
+                            className="save-button"
+                            onClick={
+                                saveArticle
+                            }
+                            disabled={
+                                saving
+                            }
+                        >
 
+                            {
+                                saving
+                                    ? "Сохранение..."
+                                    : "Сохранить"
+                            }
+
+                        </button>
 
                     </div>
 
                 </header>
 
 
-                {/* METADATA */}
+                {/* =================================================
+                   METADATA
+                   ================================================= */}
 
                 <section className="metadata">
-
 
                     <input
                         className="article-title"
 
                         value={
-                            metadata.title
+                            metadata.title ||
+                            ""
                         }
 
                         placeholder="Название статьи"
 
-                        onChange={event =>
-                            setMetadata(
-                                previous => ({
+                        onChange={
+                            event =>
+                                setMetadata(
+                                    previous => ({
+                                        ...previous,
 
-                                    ...previous,
+                                        title:
+                                            event.target.value
 
-                                    title:
-                                        event.target.value
-
-                                })
-                            )
+                                    })
+                                )
                         }
                     />
 
@@ -1158,28 +1661,68 @@ console.log(
                         className="article-description"
 
                         value={
-                            metadata.description
+                            metadata.description ||
+                            ""
                         }
 
                         placeholder="Описание"
 
-                        onChange={event =>
-                            setMetadata(
-                                previous => ({
+                        onChange={
+                            event =>
+                                setMetadata(
+                                    previous => ({
+                                        ...previous,
 
-                                    ...previous,
+                                        description:
+                                            event.target.value
 
-                                    description:
-                                        event.target.value
-
-                                })
-                            )
+                                    })
+                                )
                         }
                     />
 
 
-                    <div className="metadata-row">
+                    <select
+                        className="article-topic"
 
+                        value={
+                            metadata.topic ||
+                            "Other"
+                        }
+
+                        onChange={
+                            event =>
+                                setMetadata(
+                                    previous => ({
+                                        ...previous,
+
+                                        topic:
+                                            event.target.value
+
+                                    })
+                                )
+                        }
+                    >
+
+                        {TOPICS.map(
+                            topic => (
+
+                                <option
+                                    key={topic}
+                                    value={topic}
+                                >
+
+                                    {topic}
+
+                                </option>
+
+                            )
+                        )}
+
+                    </select>
+
+
+                    <div className="metadata-row">
 
                         <input
                             type="date"
@@ -1189,17 +1732,17 @@ console.log(
                                 ""
                             }
 
-                            onChange={event =>
-                                setMetadata(
-                                    previous => ({
+                            onChange={
+                                event =>
+                                    setMetadata(
+                                        previous => ({
+                                            ...previous,
 
-                                        ...previous,
+                                            date:
+                                                event.target.value
 
-                                        date:
-                                            event.target.value
-
-                                    })
-                                )
+                                        })
+                                    )
                             }
                         />
 
@@ -1208,56 +1751,69 @@ console.log(
                             type="text"
 
                             value={
-                                metadata.tags.join(
-                                    ", "
+                                Array.isArray(
+                                    metadata.tags
                                 )
+                                    ? metadata.tags.join(
+                                        ", "
+                                    )
+                                    : ""
                             }
 
                             placeholder="Теги"
 
-                            onChange={event => {
+                            onChange={
+                                event => {
 
-                                const tags =
-                                    event.target.value
-                                        .split(",")
-                                        .map(
-                                            tag =>
-                                                tag.trim()
-                                        )
-                                        .filter(
-                                            Boolean
-                                        );
+                                    const tags =
+                                        event
+                                            .target
+                                            .value
+                                            .split(",")
+                                            .map(
+                                                tag =>
+                                                    tag.trim()
+                                            )
+                                            .filter(
+                                                Boolean
+                                            );
 
 
-                                setMetadata(
-                                    previous => ({
+                                    setMetadata(
+                                        previous => ({
+                                            ...previous,
 
-                                        ...previous,
+                                            tags
 
-                                        tags
+                                        })
+                                    );
 
-                                    })
-                                );
-
-                            }}
+                                }
+                            }
                         />
 
-
                     </div>
-
 
                 </section>
 
 
-                {/* TIPTAP */}
+                {/* =================================================
+                   EDITOR
+                   ================================================= */}
 
                 <section className="admin-editor">
 
                     <EditorToolbar
                         editor={editor}
-                        onImage={insertImage}
-                        onSlider={insertSlider}
-                        onVideo={insertVideo}
+                        onImage={
+                            insertImage
+                        }
+                        onSlider={
+                            insertSlider
+                        }
+                        onVideo={
+                            insertVideo
+                        }
                     />
 
 
@@ -1269,11 +1825,441 @@ console.log(
 
                 </section>
 
-
             </main>
 
         </div>
 
+    );
+
+}
+
+
+/* =========================================================
+   NORMALIZE ARTICLE
+   ========================================================= */
+
+function normalizeArticle(
+    article = {}
+) {
+
+    const path =
+        article.path || "";
+
+
+    const parts =
+        path.split("/");
+
+
+    let topic =
+        article.topic ||
+        null;
+
+
+    let year =
+        article.year ||
+        null;
+
+
+    let date =
+        article.date ||
+        null;
+
+
+    /*
+     * Новый формат:
+     *
+     * _posts/TOPIC/YEAR/DATE-SLUG.md
+     */
+
+    if (
+        parts.length >= 4 &&
+        parts[0] === "_posts"
+    ) {
+
+        topic =
+            topic ||
+            parts[1];
+
+
+        year =
+            year ||
+            parts[2];
+
+
+        const filename =
+            parts[3] ||
+            "";
+
+
+        const dateMatch =
+            filename.match(
+                /^(\d{4}-\d{2}-\d{2})/
+            );
+
+
+        if (dateMatch) {
+
+            date =
+                date ||
+                dateMatch[1];
+
+        }
+
+    }
+
+
+    /*
+     * Старый формат:
+     *
+     * _posts/DATE-SLUG.md
+     */
+
+    if (
+        parts.length === 2 &&
+        parts[0] === "_posts"
+    ) {
+
+        const filename =
+            parts[1] ||
+            "";
+
+
+        const dateMatch =
+            filename.match(
+                /^(\d{4}-\d{2}-\d{2})/
+            );
+
+
+        if (dateMatch) {
+
+            date =
+                date ||
+                dateMatch[1];
+
+        }
+
+    }
+
+
+    const normalizedDate =
+        date || null;
+
+
+    return {
+
+        ...article,
+
+        topic:
+            topic || "Other",
+
+        year:
+            year ||
+            (
+                normalizedDate
+                    ? normalizedDate.slice(
+                        0,
+                        4
+                    )
+                    : "Без даты"
+            ),
+
+        date:
+            normalizedDate,
+
+        tags:
+            Array.isArray(
+                article.tags
+            )
+                ? article.tags
+                : []
+
+    };
+
+}
+
+
+/* =========================================================
+   GROUP ARTICLES
+   ========================================================= */
+
+function groupArticlesByTopic(
+    articles = []
+) {
+
+    const topicMap =
+        new Map();
+
+
+    for (
+        const article of articles
+    ) {
+
+        if (!article) {
+            continue;
+        }
+
+
+        const topic =
+            article.topic ||
+            "Other";
+
+
+        if (
+            !topicMap.has(topic)
+        ) {
+
+            topicMap.set(
+                topic,
+                new Map()
+            );
+
+        }
+
+
+        const yearMap =
+            topicMap.get(
+                topic
+            );
+
+
+        const year =
+            article.year ||
+            (
+                article.date
+                    ? article.date.slice(
+                        0,
+                        4
+                    )
+                    : "Без даты"
+            );
+
+
+        if (
+            !yearMap.has(year)
+        ) {
+
+            yearMap.set(
+                year,
+                []
+            );
+
+        }
+
+
+        yearMap
+            .get(year)
+            .push(article);
+
+    }
+
+
+    return Array.from(
+        topicMap.entries()
+    )
+
+        .sort(
+            ([a], [b]) =>
+                getTopicOrder(a) -
+                getTopicOrder(b)
+        )
+
+        .map(
+            ([topic, yearMap]) => ({
+
+                topic,
+
+                years:
+                    Array.from(
+                        yearMap.entries()
+                    )
+
+                        .sort(
+                            ([a], [b]) => {
+
+                                if (
+                                    a === "Без даты"
+                                ) {
+                                    return 1;
+                                }
+
+                                if (
+                                    b === "Без даты"
+                                ) {
+                                    return -1;
+                                }
+
+                                return b.localeCompare(
+                                    a
+                                );
+
+                            }
+                        )
+
+                        .map(
+                            ([year, yearArticles]) => ({
+
+                                year,
+
+                                articles:
+                                    Array.isArray(
+                                        yearArticles
+                                    )
+                                        ? yearArticles.sort(
+                                            compareArticles
+                                        )
+                                        : []
+
+                            })
+                        )
+
+            })
+        );
+
+}
+
+
+/* =========================================================
+   TOPIC ORDER
+   ========================================================= */
+
+function getTopicOrder(
+    topic
+) {
+
+    const index =
+        TOPICS.indexOf(
+            topic
+        );
+
+
+    if (index !== -1) {
+        return index;
+    }
+
+
+    return TOPICS.length;
+
+}
+
+
+/* =========================================================
+   ARTICLE SORT
+   ========================================================= */
+
+function compareArticles(
+    a = {},
+    b = {}
+) {
+
+    const dateA =
+        a.date ||
+        "";
+
+
+    const dateB =
+        b.date ||
+        "";
+
+
+    const dateCompare =
+        dateB.localeCompare(
+            dateA
+        );
+
+
+    if (
+        dateCompare !== 0
+    ) {
+
+        return dateCompare;
+
+    }
+
+
+    return getArticleTitle(a)
+        .localeCompare(
+            getArticleTitle(b),
+            "ru"
+        );
+
+}
+
+
+/* =========================================================
+   ARTICLE TITLE
+   ========================================================= */
+
+function getArticleTitle(
+    article = {}
+) {
+
+    if (
+        article.title
+    ) {
+
+        return String(
+            article.title
+        );
+
+    }
+
+
+    const filename =
+        article.name ||
+        article.path
+            ?.split("/")
+            .pop() ||
+        "Без названия";
+
+
+    return String(
+        filename
+    )
+
+        .replace(
+            /\.md$/,
+            ""
+        )
+
+        .replace(
+            /^\d{4}-\d{2}-\d{2}-/,
+            ""
+        )
+
+        .replace(
+            /-/g,
+            " "
+        );
+
+}
+
+
+/* =========================================================
+   FORMAT DATE
+   ========================================================= */
+
+function formatDate(
+    date
+) {
+
+    if (!date) {
+        return "";
+    }
+
+
+    const match =
+        String(date).match(
+            /^(\d{4})-(\d{2})-(\d{2})$/
+        );
+
+
+    if (!match) {
+        return date;
+    }
+
+
+    return (
+        `${match[3]}.${match[2]}.${match[1]}`
     );
 
 }
@@ -1287,8 +2273,14 @@ function parseFrontMatter(
     markdown
 ) {
 
+    const text =
+        String(
+            markdown || ""
+        );
+
+
     const match =
-        markdown.match(
+        text.match(
             /^---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/
         );
 
@@ -1297,24 +2289,42 @@ function parseFrontMatter(
 
         return {
 
-            frontMatter: {
-                ...EMPTY_FRONT_MATTER
-            },
+            frontMatter:
+                {
+                    ...EMPTY_FRONT_MATTER,
+                    tags: []
+                },
 
             content:
-                markdown
+                text
 
         };
 
     }
 
 
+    const parsed =
+        parseYaml(
+            match[1]
+        );
+
+
     return {
 
-        frontMatter:
-            parseYaml(
-                match[1]
-            ),
+        frontMatter: {
+
+            ...EMPTY_FRONT_MATTER,
+
+            ...parsed,
+
+            tags:
+                Array.isArray(
+                    parsed.tags
+                )
+                    ? parsed.tags
+                    : []
+
+        },
 
         content:
             match[2]
@@ -1324,15 +2334,21 @@ function parseFrontMatter(
 }
 
 
+/* =========================================================
+   YAML PARSER
+   ========================================================= */
+
 function parseYaml(
-    yaml
+    yaml = ""
 ) {
 
     const result = {};
 
 
     const lines =
-        yaml.split(
+        String(
+            yaml
+        ).split(
             /\r?\n/
         );
 
@@ -1355,31 +2371,52 @@ function parseYaml(
         const key =
             match[1];
 
+
         let value =
             match[2].trim();
 
+
+        /*
+         * Array:
+         *
+         * tags: ["ML", "XGBoost"]
+         */
 
         if (
             value.startsWith("[") &&
             value.endsWith("]")
         ) {
 
-            value =
-                value
-                    .slice(1, -1)
-                    .split(",")
-                    .map(
-                        item =>
-                            item
-                                .trim()
-                                .replace(
-                                    /^["']|["']$/g,
-                                    ""
-                                )
-                    )
-                    .filter(
-                        Boolean
-                    );
+            const inner =
+                value.slice(
+                    1,
+                    -1
+                );
+
+
+            if (!inner.trim()) {
+
+                value = [];
+
+            } else {
+
+                value =
+                    inner
+                        .split(",")
+                        .map(
+                            item =>
+                                item
+                                    .trim()
+                                    .replace(
+                                        /^["']|["']$/g,
+                                        ""
+                                    )
+                            )
+                        .filter(
+                            Boolean
+                        );
+
+            }
 
         } else {
 
@@ -1403,9 +2440,21 @@ function parseYaml(
 }
 
 
+/* =========================================================
+   SERIALIZE FRONT MATTER
+   ========================================================= */
+
 function serializeFrontMatter(
-    metadata
+    metadata = {}
 ) {
+
+    const safeTags =
+        Array.isArray(
+            metadata.tags
+        )
+            ? metadata.tags
+            : [];
+
 
     const lines = [
         "---"
@@ -1433,6 +2482,19 @@ function serializeFrontMatter(
 
 
     if (
+        metadata.topic
+    ) {
+
+        lines.push(
+            `topic: "${escapeYaml(
+                metadata.topic
+            )}"`
+        );
+
+    }
+
+
+    if (
         metadata.date
     ) {
 
@@ -1444,11 +2506,11 @@ function serializeFrontMatter(
 
 
     if (
-        metadata.tags?.length
+        safeTags.length > 0
     ) {
 
         lines.push(
-            `tags: [${metadata.tags
+            `tags: [${safeTags
                 .map(
                     tag =>
                         `"${escapeYaml(
@@ -1486,6 +2548,10 @@ function serializeFrontMatter(
 }
 
 
+/* =========================================================
+   ESCAPE YAML
+   ========================================================= */
+
 function escapeYaml(
     value
 ) {
@@ -1493,10 +2559,12 @@ function escapeYaml(
     return String(
         value || ""
     )
+
         .replace(
             /\\/g,
             "\\\\"
         )
+
         .replace(
             /"/g,
             '\\"'
@@ -1506,7 +2574,7 @@ function escapeYaml(
 
 
 /* =========================================================
-   MARKDOWN
+   BUILD MARKDOWN
    ========================================================= */
 
 function buildMarkdown(
@@ -1521,51 +2589,63 @@ function buildMarkdown(
 
 
     return (
+
         serializeFrontMatter(
             metadata
         ) +
+
         "\n\n" +
-        body.trim() +
+
+        String(
+            body || ""
+        ).trim() +
+
         "\n"
+
     );
 
 }
 
 
 /* =========================================================
-   PATH
+   ARTICLE PATH
    ========================================================= */
 
 function createArticlePath(
-    title
+    title,
+    topic,
+    date
 ) {
 
     const slug =
-        title
+        createSlug(
+            title
+        );
 
-            .toLowerCase()
 
-            .trim()
+    const normalizedTopic =
+        normalizeTopic(
+            topic
+        );
 
-            .replace(
-                /[^a-zа-яё0-9\s-]/gi,
-                ""
-            )
 
-            .replace(
-                /\s+/g,
-                "-"
-            )
+    const articleDate =
+        date ||
+        today();
 
-            .replace(
-                /-+/g,
-                "-"
-            );
+
+    const year =
+        articleDate.slice(
+            0,
+            4
+        );
 
 
     return (
         `_posts/` +
-        `${today()}-` +
+        `${normalizedTopic}/` +
+        `${year}/` +
+        `${articleDate}-` +
         `${slug || "article"}.md`
     );
 
@@ -1573,7 +2653,76 @@ function createArticlePath(
 
 
 /* =========================================================
-   DATE
+   SLUG
+   ========================================================= */
+
+function createSlug(
+    title
+) {
+
+    return String(
+        title || ""
+    )
+
+        .toLowerCase()
+
+        .trim()
+
+        .replace(
+            /[^a-zа-яё0-9\s-]/gi,
+            ""
+        )
+
+        .replace(
+            /\s+/g,
+            "-"
+        )
+
+        .replace(
+            /-+/g,
+            "-"
+        )
+
+        .replace(
+            /^-+|-+$/g,
+            ""
+        );
+
+}
+
+
+/* =========================================================
+   NORMALIZE TOPIC
+   ========================================================= */
+
+function normalizeTopic(
+    topic
+) {
+
+    return (
+
+        String(
+            topic || "Other"
+        )
+
+            .trim()
+
+            .replace(
+                /[\\/:*?"<>|]/g,
+                ""
+            )
+
+            ||
+
+        "Other"
+
+    );
+
+}
+
+
+/* =========================================================
+   TODAY
    ========================================================= */
 
 function today() {
@@ -1589,19 +2738,21 @@ function today() {
     const month =
         String(
             date.getMonth() + 1
-        ).padStart(
-            2,
-            "0"
-        );
+        )
+            .padStart(
+                2,
+                "0"
+            );
 
 
     const day =
         String(
             date.getDate()
-        ).padStart(
-            2,
-            "0"
-        );
+        )
+            .padStart(
+                2,
+                "0"
+            );
 
 
     return (
