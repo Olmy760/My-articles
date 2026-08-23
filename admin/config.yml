@@ -20,4 +20,4 @@ collections:
       - { label: "Дата", name: "date", widget: "datetime" }
       - { label: "Описание", name: "description", widget: "text" }
       - { label: "Теги", name: "tags", widget: "list", default: ["post"] }
-      - { label: "Содержание", name: "body", widget: "markdown" }
+      - { label: "Содержание", name: "body", widget: "richtext" }
