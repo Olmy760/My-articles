@@ -333,71 +333,106 @@ export default function AdminApp() {
     }
 
 
-    function deleteTopic(
-        topic
-    ) {
-
-        if (
-            topic === "Other"
-        ) {
-
-            setStatus(
-                'Тему "Other" удалить нельзя'
-            );
-
+        async function deleteTopic(topicToDelete) {
+        // 1. Базовые проверки
+        if (topicToDelete === "Other") {
+            setStatus('Тему "Other" удалить нельзя');
             return;
-
         }
 
-
-        const articlesInTopic =
-            articles.filter(
-                article =>
-                    article.topic ===
-                    topic
-            );
-
-
-        if (
-            articlesInTopic.length > 0
-        ) {
-
-            setStatus(
-                `Нельзя удалить "${topic}": в ней ${articlesInTopic.length} ${
-                    articlesInTopic.length === 1
-                        ? "статья"
-                        : "статей"
-                }. Сначала перенесите статьи в другую тему.`
-            );
-
+        if (loadingArticles) {
+            setStatus("Дождитесь полной загрузки статей перед изменением тем");
             return;
-
         }
 
+        // 2. Находим все статьи, которые принадлежат этой теме
+        const articlesToMove = articles.filter(
+            article =>
+                article.topic === topicToDelete ||
+                getTopicFromPath(article.path) === topicToDelete
+        );
 
+        // 3. Предупреждаем пользователя о переносе
         if (
             !window.confirm(
-                `Удалить тему "${topic}"?`
+                `Удалить тему "${topicToDelete}"?\n\n` +
+                `Все ${articlesToMove.length} статей из этой темы будут автоматически перемещены в категорию "Other".`
             )
         ) {
-
             return;
-
         }
 
+        try {
+            setSaving(true);
+            setStatus(`Перенос статей в "Other": 0/${articlesToMove.length}...`);
 
-        saveTopics(
-            topics.filter(
-                existing =>
-                    existing !== topic
-            )
-        );
+            // 4. Поочерёдно переносим каждую статью
+            for (let i = 0; i < articlesToMove.length; i++) {
+                const article = articlesToMove[i];
+                
+                // Читаем текущее содержимое файла
+                const file = await getArticleContent(article.path);
+                const parts = article.path.split("/");
+                const filename = parts[parts.length - 1];
 
+                if (!filename) {
+                    throw new Error(`Не удалось определить имя файла: ${article.path}`);
+                }
 
-        setStatus(
-            `Тема "${topic}" удалена ✓`
-        );
+                // Определяем год для нового пути (используем дату из front matter или метаданных)
+                const parsed = parseFrontMatter(file.content);
+                const articleDate = parsed.frontMatter.date || article.date || today();
+                const year = article.year || String(articleDate).slice(0, 4) || "Без даты";
 
+                // Формируем новый путь: _posts/Other/<год>/<имя_файла>
+                const newPath = `_posts/Other/${year}/${filename}`;
+
+                // Обновляем front matter, меняя тему на "Other"
+                // (функция updateFrontMatterTopic теперь находится на верхнем уровне файла)
+                const newMarkdown = updateFrontMatterTopic(file.content, "Other");
+
+                // Создаём файл на новом месте
+                await createArticle(
+                    newPath,
+                    newMarkdown,
+                    `Move article to Other after deleting topic ${topicToDelete}: ${getArticleTitle(article)}`
+                );
+
+                // Удаляем файл со старого места
+                await deleteArticle(
+                    article.path,
+                    `Delete old path after moving to Other (topic ${topicToDelete} deleted): ${getArticleTitle(article)}`
+                );
+
+                setStatus(`Перенос статей: ${i + 1}/${articlesToMove.length}...`);
+            }
+
+            // 5. Безопасно удаляем тему из списка (читаем актуальное состояние из localStorage)
+            const storedTopics = localStorage.getItem(TOPICS_STORAGE_KEY);
+            const currentTopics = storedTopics ? JSON.parse(storedTopics) : DEFAULT_TOPICS;
+            
+            saveTopics(currentTopics.filter(t => t !== topicToDelete));
+
+            // 6. Если открытая сейчас статья была перемещена, сбрасываем редактор, чтобы избежать рассинхронизации
+            if (
+                currentArticle && 
+                (currentArticle.topic === topicToDelete || getTopicFromPath(currentArticle.path) === topicToDelete)
+            ) {
+                setCurrentArticle(null);
+                setMetadata({ ...EMPTY_FRONT_MATTER });
+                editor?.commands.clearContent();
+            }
+
+            // 7. Перезагружаем список статей и показываем успех
+            await loadArticles();
+            setStatus(`Тема "${topicToDelete}" удалена, статьи перемещены в "Other" ✓`);
+
+        } catch (error) {
+            console.error("Ошибка при удалении темы:", error);
+            setStatus(`Ошибка при удалении темы: ${error.message}`);
+        } finally {
+            setSaving(false);
+        }
     }
 
 
@@ -608,8 +643,11 @@ export default function AdminApp() {
             }
 
             /* Заменяем старую тему в topics только после миграции. */
+            const storedTopics = localStorage.getItem(TOPICS_STORAGE_KEY);
+            const currentTopics = storedTopics ? JSON.parse(storedTopics) : DEFAULT_TOPICS;
+
             saveTopics(
-                topics.map(
+                currentTopics.map(
                     topic =>
                         topic === oldTopic
                             ? newTopic
@@ -670,38 +708,27 @@ export default function AdminApp() {
      * если тема была создана до появления
      * менеджера тем.
      */
-    function mergeArticleTopics(
-        articleList
-    ) {
+    function mergeArticleTopics(articleList) {
+    try {
+        const stored = localStorage.getItem(TOPICS_STORAGE_KEY);
+        const currentTopics = stored ? JSON.parse(stored) : DEFAULT_TOPICS;
 
-        const articleTopics =
-            articleList
-                .map(
-                    article =>
-                        article.topic
-                )
-                .filter(Boolean);
+        const articleTopics = articleList
+            .map(article => article.topic)
+            .filter(Boolean);
 
+        const merged = normalizeTopics([
+            ...currentTopics,
+            ...articleTopics
+        ]);
 
-        const merged =
-            normalizeTopics([
-                ...topics,
-                ...articleTopics
-            ]);
-
-
-        if (
-            JSON.stringify(merged) !==
-            JSON.stringify(topics)
-        ) {
-
-            saveTopics(
-                merged
-            );
-
+        if (JSON.stringify(merged) !== JSON.stringify(currentTopics)) {
+            saveTopics(merged);
         }
-
+    } catch (error) {
+        console.error("Ошибка при слиянии тем:", error);
     }
+}
 
 
     /* =====================================================
@@ -2389,128 +2416,89 @@ export default function AdminApp() {
 
 
                             <div className="admin-topic-list">
+    {topics.map(topic => {
+        const count = articles.filter(
+            article => article.topic === topic
+        ).length;
 
-                                {topics.map(
-                                    topic => {
-
-                                        const count =
-                                            articles.filter(
-                                                article =>
-                                                    article.topic ===
-                                                    topic
-                                            ).length;
-
-
-                                        return (
-
-                                            <div
-                                                className={
-                                                    "admin-topic-row " +
-                                                    (renamingTopic === topic
-                                                        ? "editing"
-                                                        : "")
-                                                }
-                                                key={
-                                                    topic
-                                                }
-                                            >
-                                                {renamingTopic === topic ? (
-                                                    <>
-                                                        <input
-                                                            className="topic-edit-input"
-                                                            type="text"
-                                                            value={
-                                                                renamingTopicName
-                                                            }
-                                                            autoFocus
-                                                            disabled={saving}
-                                                            onChange={event =>
-                                                                setRenamingTopicName(
-                                                                    event.target.value
-                                                                )
-                                                            }
-                                                            onKeyDown={event => {
-                                                                if (event.key === "Enter") {
-                                                                    event.preventDefault();
-                                                                    renameTopic();
-                                                                }
-
-                                                                if (event.key === "Escape") {
-                                                                    event.preventDefault();
-                                                                    cancelRenameTopic();
-                                                                }
-                                                            }}
-                                                        />
-
-                                                        <div>
-                                                            <button
-                                                                type="button"
-                                                                className="topic-save"
-                                                                onClick={renameTopic}
-                                                                disabled={saving}
-                                                                title="Сохранить переименование"
-                                                            >
-                                                                ✓
-                                                            </button>
-
-                                                            <button
-                                                                type="button"
-                                                                className="topic-cancel"
-                                                                onClick={cancelRenameTopic}
-                                                                disabled={saving}
-                                                                title="Отменить"
-                                                            >
-                                                                ×
-                                                            </button>
-                                                        </div>
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <span>
-                                                            {topic}
-                                                        </span>
-
-                                                        <div>
-                                                            <span className="admin-topic-row-count">
-                                                                {count}
-                                                            </span>
-
-                                                            {topic !== "Other" && (
-                                                                <>
-                                                                    <button
-                                                                        type="button"
-                                                                        className="topic-edit"
-                                                                        onClick={() =>
-                                                                            startRenameTopic(topic)
-                                                                        }
-                                                                        title="Переименовать тему"
-                                                                    >
-                                                                        ✎
-                                                                    </button>
-
-                                                                    <button
-                                                                        type="button"
-                                                                        className="admin-topic-delete"
-                                                                        onClick={() =>
-                                                                            deleteTopic(topic)
-                                                                        }
-                                                                        title="Удалить тему"
-                                                                    >
-                                                                        ×
-                                                                    </button>
-                                                                </>
-                                                            )}
-                                                        </div>
-                                                    </>
-                                                )}
-                                            </div>
-
-                                        );
-
-                                    }
-                                )}
-
-                            </div>
+        return (
+            <div
+                className={"admin-topic-row " + (renamingTopic === topic ? "editing" : "")}
+                key={topic}
+            >
+                {renamingTopic === topic ? (
+                    <>
+                        <input
+                            className="topic-edit-input"
+                            type="text"
+                            value={renamingTopicName}
+                            autoFocus
+                            disabled={saving}
+                            onChange={event => setRenamingTopicName(event.target.value)}
+                            onKeyDown={event => {
+                                if (event.key === "Enter") {
+                                    event.preventDefault();
+                                    renameTopic();
+                                }
+                                if (event.key === "Escape") {
+                                    event.preventDefault();
+                                    cancelRenameTopic();
+                                }
+                            }}
+                        />
+                        <div className="admin-topic-row-actions">
+                            <button
+                                type="button"
+                                className="admin-topic-save"
+                                onClick={renameTopic}
+                                disabled={saving}
+                                title="Сохранить переименование"
+                            >
+                                ✓
+                            </button>
+                            <button
+                                type="button"
+                                className="admin-topic-cancel"
+                                onClick={cancelRenameTopic}
+                                disabled={saving}
+                                title="Отменить"
+                            >
+                                ×
+                            </button>
+                        </div>
+                    </>
+                ) : (
+                    <>
+                        <span>{topic}</span>
+                        <div className="admin-topic-row-actions">
+                            <span className="admin-topic-row-count">{count}</span>
+                            {topic !== "Other" && (
+                                <>
+                                    <button
+                                        type="button"
+                                        className="admin-topic-edit"
+                                        onClick={() => startRenameTopic(topic)}
+                                        title="Переименовать тему"
+                                    >
+                                        ✎
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className="admin-topic-delete"
+                                        onClick={() => deleteTopic(topic)}
+                                        title="Удалить тему"
+                                    >
+                                        ×
+                                    </button>
+                                </>
+                            )}
+                        </div>
+                    </>
+                )}
+            </div>
+        );
+    })}
+</div>
 
                         </div>
 
@@ -3289,34 +3277,6 @@ function groupArticlesByTopic(
         new Map();
 
 
-    /* =========================================================
-       UPDATE TOPIC IN FRONT MATTER
-       ========================================================= */
-
-    function updateFrontMatterTopic(
-        markdown,
-        topic
-    ) {
-        const text = String(markdown || "");
-        const match = text.match(
-            /^---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/
-        );
-        const topicLine = `topic: "${escapeYaml(topic)}"`;
-
-        if (!match) {
-            return "---\n" + topicLine + "\n---\n\n" + text.trim() + "\n";
-        }
-
-        let frontMatter = match[1];
-
-        if (/^topic\s*:/m.test(frontMatter)) {
-            frontMatter = frontMatter.replace(/^topic\s*:.*$/m, topicLine);
-        } else {
-            frontMatter = frontMatter.trimEnd() + "\n" + topicLine;
-        }
-
-        return "---\n" + frontMatter + "\n---\n" + match[2].trim() + "\n";
-    }
 
 
     /*
@@ -4099,4 +4059,27 @@ function today() {
         `${year}-${month}-${day}`
     );
 
+}
+
+/* =========================================================
+   UPDATE TOPIC IN FRONT MATTER
+   ========================================================= */
+function updateFrontMatterTopic(markdown, topic) {
+    const text = String(markdown || "");
+    const match = text.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/);
+    const topicLine = `topic: "${escapeYaml(topic)}"`;
+
+    if (!match) {
+        return "---\n" + topicLine + "\n---\n\n" + text.trim() + "\n";
+    }
+
+    let frontMatter = match[1];
+
+    if (/^topic\s*:/m.test(frontMatter)) {
+        frontMatter = frontMatter.replace(/^topic\s*:.*$/m, topicLine);
+    } else {
+        frontMatter = frontMatter.trimEnd() + "\n" + topicLine;
+    }
+
+    return "---\n" + frontMatter + "\n---\n" + match[2].trim() + "\n";
 }

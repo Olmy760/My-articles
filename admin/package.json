@@ -11,6 +11,7 @@
     "@tiptap/extension-underline": "^3.30.2",
     "@tiptap/react": "^3.0.0",
     "@tiptap/starter-kit": "^3.0.0",
+    "marked": "^18.0.10",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "tiptap-markdown": "^0.8.0"
