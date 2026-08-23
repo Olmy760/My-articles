@@ -64,6 +64,7 @@ const EMPTY_FRONT_MATTER = {
 
 
 export default function AdminApp() {
+    
 
     const [user, setUser] =
         useState(null);
@@ -184,6 +185,207 @@ export default function AdminApp() {
 }
 
         });
+
+    function getImageUrl(path) {
+        return (
+            `https://raw.githubusercontent.com/` +
+            `Olmy760/My-articles/` +
+            `own_redactor/${path}`
+        );
+    }
+
+    async function insertImage() {
+
+    const input =
+        document.createElement("input");
+
+    input.type = "file";
+
+    input.accept =
+        "image/png,image/jpeg,image/gif,image/webp,image/avif";
+
+    input.onchange = async () => {
+
+        const file =
+            input.files?.[0];
+
+        if (!file) {
+            return;
+        }
+
+        try {
+
+            setStatus(
+                "Загрузка изображения..."
+            );
+
+            const result =
+                await uploadImage(file);
+
+            editor
+                ?.chain()
+                .focus()
+                .setImage({
+                    src:
+                        getImageUrl(
+                            result.path
+                        )
+                })
+                .run();
+
+            setStatus(
+                "Изображение добавлено ✓"
+            );
+
+        } catch (error) {
+
+            console.error(error);
+
+            setStatus(
+                `Ошибка загрузки: ${error.message}`
+            );
+        }
+    };
+
+    input.click();
+}
+
+function insertVideo() {
+
+    const url =
+        window.prompt(
+            "Вставьте ссылку на YouTube, VK Видео или Rutube:"
+        );
+
+    if (!url) {
+        return;
+    }
+
+    const inserted =
+        editor
+            ?.chain()
+            .focus()
+            .setVideo(url)
+            .run();
+
+    if (!inserted) {
+
+        setStatus(
+            "Не удалось определить видеосервис"
+        );
+
+        return;
+    }
+
+    setStatus(
+        "Видео добавлено ✓"
+    );
+}
+
+    async function insertSlider() {
+
+        const input =
+            document.createElement("input");
+
+        input.type = "file";
+
+        input.accept =
+            "image/png,image/jpeg,image/gif,image/webp,image/avif";
+
+        input.multiple = true;
+
+
+        input.onchange = async () => {
+
+            const files =
+                Array.from(
+                    input.files || []
+                );
+
+            if (files.length < 2) {
+
+                setStatus(
+                    "Выберите минимум 2 изображения"
+                );
+
+                return;
+            }
+
+
+            try {
+
+                setStatus(
+                    `Загрузка 0/${files.length}...`
+                );
+
+
+                const results = [];
+
+                for (
+                    let i = 0;
+                    i < files.length;
+                    i++
+                ) {
+
+                    const result =
+                        await uploadImage(
+                            files[i]
+                        );
+
+                    results.push(result);
+
+                    setStatus(
+                        `Загрузка ${i + 1}/${files.length}...`
+                    );
+                }
+
+
+                const images =
+                    results.map(
+                        result => ({
+                            src:
+                                getImageUrl(
+                                    result.path
+                                )
+                        })
+                    );
+
+
+                const inserted =
+                    editor
+                        ?.chain()
+                        .focus()
+                        .setImageSlider(
+                            images
+                        )
+                        .run();
+
+
+                if (!inserted) {
+
+                    throw new Error(
+                        "Не удалось вставить слайдер"
+                    );
+                }
+
+
+                setStatus(
+                    `Слайдер добавлен: ${images.length} изображений ✓`
+                );
+
+            } catch (error) {
+
+                console.error(error);
+
+                setStatus(
+                    `Ошибка загрузки: ${error.message}`
+                );
+            }
+        };
+
+
+        input.click();
+    }
 
 
     /* =====================================================
@@ -527,11 +729,12 @@ export default function AdminApp() {
 
 
         const result =
-            await updateArticle(
-    currentArticle.path,
-    markdown,
-    `Update article: ${metadata.title}`
-);
+    await updateArticle(
+        currentArticle.path,
+        markdown,
+        currentArticle.sha,
+        `Update article: ${metadata.title}`
+    );
 
 
         setCurrentArticle(
@@ -1379,199 +1582,4 @@ function today() {
         `${year}-${month}-${day}`
     );
 
-}
-
-
-function getImageUrl(path) {
-
-    return (
-        `https://raw.githubusercontent.com/` +
-        `${REPO_OWNER}/${REPO_NAME}/` +
-        `${REPO_BRANCH}/${path}`
-    );
-}
-
-async function insertImage() {
-
-    const input =
-        document.createElement("input");
-
-    input.type = "file";
-
-    input.accept =
-        "image/png,image/jpeg,image/gif,image/webp,image/avif";
-
-    input.onchange = async () => {
-
-        const file =
-            input.files?.[0];
-
-        if (!file) {
-            return;
-        }
-
-        try {
-
-            setStatus(
-                "Загрузка изображения..."
-            );
-
-            const result =
-                await uploadImage(file);
-
-            editor
-                ?.chain()
-                .focus()
-                .setImage({
-                    src:
-                        getImageUrl(
-                            result.path
-                        )
-                })
-                .run();
-
-            setStatus(
-                "Изображение добавлено ✓"
-            );
-
-        } catch (error) {
-
-            console.error(error);
-
-            setStatus(
-                `Ошибка: ${error.message}`
-            );
-        }
-    };
-
-    input.click();
-}
-
-function insertVideo() {
-
-    const url =
-        window.prompt(
-            "Вставьте ссылку на YouTube, VK Видео или Rutube:"
-        );
-
-
-    if (!url) {
-        return;
-    }
-
-
-    const inserted =
-        editor
-            ?.chain()
-            .focus()
-            .setVideo(url)
-            .run();
-
-
-    if (!inserted) {
-
-        setStatus(
-            "Не удалось определить видеосервис"
-        );
-
-        return;
-    }
-
-
-    setStatus(
-        "Видео добавлено ✓"
-    );
-}
-
-async function insertSlider() {
-
-    const input =
-        document.createElement(
-            "input"
-        );
-
-    input.type = "file";
-
-    input.accept =
-        "image/png,image/jpeg,image/gif,image/webp,image/avif";
-
-    input.multiple = true;
-
-
-    input.onchange =
-        async () => {
-
-            const files =
-                Array.from(
-                    input.files || []
-                );
-
-
-            if (
-                files.length < 2
-            ) {
-
-                setStatus(
-                    "Выберите минимум 2 изображения"
-                );
-
-                return;
-            }
-
-
-            try {
-
-                setStatus(
-                    `Загрузка 0/${files.length}...`
-                );
-
-
-                const results =
-                    await uploadImages(
-                        files,
-                        (current, total) => {
-
-                            setStatus(
-                                `Загрузка ${current}/${total}...`
-                            );
-                        }
-                    );
-
-
-                const images =
-                    results.map(
-                        result => ({
-                            src:
-                                getImageUrl(
-                                    result.path
-                                )
-                        })
-                    );
-
-
-                editor
-                    ?.chain()
-                    .focus()
-                    .setImageSlider(
-                        images
-                    )
-                    .run();
-
-
-                setStatus(
-                    `Слайдер добавлен: ${images.length} изображений ✓`
-                );
-
-            } catch (error) {
-
-                console.error(error);
-
-                setStatus(
-                    `Ошибка загрузки: ${error.message}`
-                );
-            }
-        };
-
-
-    input.click();
 }
