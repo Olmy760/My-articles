@@ -1,11 +1,13 @@
-import Image
-    from "@tiptap/extension-image";
+import { CustomImage } from "../editor/CustomImage";
 
 import Underline
     from "@tiptap/extension-underline";
+    
 
 import Link
     from "@tiptap/extension-link";
+
+import { marked } from "marked";
 
 import { VideoNode }
     from "../editor/VideoNode";
@@ -93,6 +95,8 @@ export default function AdminApp() {
     const [user, setUser] =
         useState(null);
 
+    const [viewMode, setViewMode] = useState("editor"); // "editor" или "preview"
+
     const [saving, setSaving] =
         useState(false);
 
@@ -145,11 +149,14 @@ export default function AdminApp() {
        TOPICS
        ===================================================== */
 
+       
     useEffect(() => {
 
         loadTopics();
 
     }, []);
+
+    
 
 
     function loadTopics() {
@@ -735,6 +742,14 @@ export default function AdminApp() {
        EDITOR
        ===================================================== */
 
+    function getImageUrl(path) {
+    return (
+        `https://raw.githubusercontent.com/` +
+        `Olmy760/My-articles/` +
+        `own_redactor/${path}`
+    );
+}
+
     const editor =
         useEditor({
 
@@ -744,8 +759,9 @@ export default function AdminApp() {
 
                 Underline,
 
-                Image.configure({
-                    allowBase64: false
+                CustomImage.configure({
+                    allowBase64: false,
+                    inline: false,
                 }),
 
                 Link.configure({
@@ -759,8 +775,10 @@ export default function AdminApp() {
                 SliderNode,
 
                 Placeholder.configure({
-                    placeholder:
-                        "Начните писать..."
+                    placeholder: "Начните писать...",
+                    emptyEditorClass: "is-editor-empty",
+                    emptyNodeClass: "is-empty",
+                    includeChildren: false
                 }),
 
                 Markdown.configure({
@@ -774,101 +792,110 @@ export default function AdminApp() {
             content: "",
 
             editorProps: {
-
                 attributes: {
-                    class:
-                        "tiptap-editor"
+                    class: "tiptap-editor"
                 },
 
-
-                handlePaste(
-                    view,
-                    event
-                ) {
-
-                    const files =
-                        Array.from(
-                            event
-                                .clipboardData
-                                ?.files || []
-                        );
-
-
-                    const image =
-                        files.find(
-                            file =>
-                                file.type.startsWith(
-                                    "image/"
-                                )
-                        );
-
+                handleDrop(view, event) {
+                    // Проверяем, есть ли файлы в дропе
+                    const files = Array.from(event.dataTransfer?.files || []);
+                    const image = files.find(file => file.type.startsWith("image/"));
 
                     if (!image) {
-
-                        return false;
-
+                        return false; // Позволяем стандартное поведение для не-изображений
                     }
 
+                    event.preventDefault();
+
+                    // Получаем позицию, куда дропнули файл
+                    const pos = view.posAtCoords({
+                        left: event.clientX,
+                        top: event.clientY
+                    });
 
                     uploadImage(image)
-
                         .then(result => {
+                            editor
+                                ?.chain()
+                                .focus()
+                                .insertContentAt(pos?.pos || undefined, {
+                                    type: "image",
+                                    attrs: {
+                                        src: getImageUrl(result.path)
+                                    }
+                                })
+                                .run();
 
+                            setStatus("Изображение добавлено ✓");
+                        })
+                        .catch(error => {
+                            console.error(error);
+                            setStatus(`Ошибка загрузки: ${error.message}`);
+                        });
+
+                    return true;
+                },
+
+                handlePaste(view, event) {
+                    const files = Array.from(event.clipboardData?.files || []);
+                    const image = files.find(file => file.type.startsWith("image/"));
+
+                    if (!image) {
+                        return false;
+                    }
+
+                    uploadImage(image)
+                        .then(result => {
                             editor
                                 ?.chain()
                                 .focus()
                                 .setImage({
-                                    src:
-                                        getImageUrl(
-                                            result.path
-                                        )
+                                    src: getImageUrl(result.path)
                                 })
                                 .run();
 
-
-                            setStatus(
-                                "Изображение добавлено ✓"
-                            );
-
+                            setStatus("Изображение добавлено ✓");
                         })
-
                         .catch(error => {
-
-                            console.error(
-                                error
-                            );
-
-                            setStatus(
-                                `Ошибка загрузки: ${error.message}`
-                            );
-
+                            console.error(error);
+                            setStatus(`Ошибка загрузки: ${error.message}`);
                         });
 
-
                     return true;
-
                 }
-
             }
 
         });
 
+        useEffect(() => {
+    if (!editor) return;
 
-    /* =====================================================
-       IMAGE URL
-       ===================================================== */
+    const editorElement = editor.view.dom;
 
-    function getImageUrl(
-        path
-    ) {
+    const handleDragOver = (event) => {
+        event.preventDefault();
+        editorElement.classList.add("drag-over");
+    };
 
-        return (
-            `https://raw.githubusercontent.com/` +
-            `Olmy760/My-articles/` +
-            `own_redactor/${path}`
-        );
+    const handleDragLeave = (event) => {
+        event.preventDefault();
+        editorElement.classList.remove("drag-over");
+    };
 
-    }
+    const handleDrop = () => {
+        editorElement.classList.remove("drag-over");
+    };
+
+    editorElement.addEventListener("dragover", handleDragOver);
+    editorElement.addEventListener("dragleave", handleDragLeave);
+    editorElement.addEventListener("drop", handleDrop);
+
+    return () => {
+        editorElement.removeEventListener("dragover", handleDragOver);
+        editorElement.removeEventListener("dragleave", handleDragLeave);
+        editorElement.removeEventListener("drop", handleDrop);
+    };
+}, [editor]);
 
 
     /* =====================================================
@@ -3063,28 +3090,70 @@ export default function AdminApp() {
                    ================================================= */}
 
                 <section className="admin-editor">
+                {/* Переключатель режимов */}
+                <div className="view-mode-toggle">
+                    <button
+                        type="button"
+                        className={`view-mode-button ${viewMode === "editor" ? "active" : ""}`}
+                        onClick={() => setViewMode("editor")}
+                    >
+                        Редактор
+                    </button>
+                    <button
+                        type="button"
+                        className={`view-mode-button ${viewMode === "preview" ? "active" : ""}`}
+                        onClick={() => setViewMode("preview")}
+                    >
+                        Предпросмотр
+                    </button>
+                </div>
 
-                    <EditorToolbar
-                        editor={editor}
-                        onImage={
-                            insertImage
-                        }
-                        onSlider={
-                            insertSlider
-                        }
-                        onVideo={
-                            insertVideo
-                        }
-                    />
+                {/* Режим редактора */}
+                {viewMode === "editor" && (
+                    <>
+                        <EditorToolbar
+                            editor={editor}
+                            onImage={insertImage}
+                            onSlider={insertSlider}
+                            onVideo={insertVideo}
+                        />
+                        <EditorContent editor={editor} />
+                    </>
+                )}
 
+                {/* Режим предпросмотра */}
+                {viewMode === "preview" && (
+                    <div className="preview-container">
+                        <div className="preview-content">
+                            {/* Заголовок и мета */}
+                            <header className="preview-header">
+                                <h1 className="preview-title">{metadata.title || "Без названия"}</h1>
+                                {metadata.description && (
+                                    <p className="preview-description">{metadata.description}</p>
+                                )}
+                                <div className="preview-meta">
+                                    {metadata.topic && (
+                                        <span className="preview-topic">{metadata.topic}</span>
+                                    )}
+                                    {metadata.date && (
+                                        <span className="preview-date">{formatDate(metadata.date)}</span>
+                                    )}
+                                </div>
+                            </header>
 
-                    <EditorContent
-                        editor={
-                            editor
-                        }
-                    />
-
-                </section>
+                            {/* Контент статьи */}
+                            <article
+                                className="preview-body"
+                                dangerouslySetInnerHTML={{
+                                    __html: marked.parse(
+                                        editor?.storage?.markdown?.getMarkdown() || ""
+                                    )
+                                }}
+                            />
+                        </div>
+                    </div>
+                )}
+            </section>
 
             </main>
 

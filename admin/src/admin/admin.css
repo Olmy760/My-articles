@@ -1979,3 +1979,491 @@
     }
 
 }
+
+/* =====================================================
+   VIEW MODE TOGGLE
+   ===================================================== */
+
+.view-mode-toggle {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid #e5e7eb;
+    background: #fff;
+    position: sticky;
+    top: 0;
+    z-index: 20;
+}
+
+.view-mode-button {
+    flex: 1;
+    padding: 12px 20px;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    color: #666;
+    transition: all 0.15s ease;
+    border-bottom: 2px solid transparent;
+}
+
+.view-mode-button:hover {
+    background: #f9fafb;
+    color: #222;
+}
+
+.view-mode-button.active {
+    color: #222;
+    border-bottom-color: #222;
+    background: #fff;
+}
+
+/* =====================================================
+   PREVIEW CONTAINER
+   ===================================================== */
+
+.preview-container {
+    background: #fff;
+    min-height: 400px;
+    padding: 40px 20px;
+}
+
+.preview-content {
+    max-width: 720px;
+    margin: 0 auto;
+}
+
+/* =====================================================
+   PREVIEW HEADER
+   ===================================================== */
+
+.preview-header {
+    margin-bottom: 32px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.preview-title {
+    font-size: 32px;
+    font-weight: 700;
+    color: #111;
+    margin: 0 0 12px 0;
+    line-height: 1.3;
+}
+
+.preview-description {
+    font-size: 18px;
+    color: #555;
+    margin: 0 0 16px 0;
+    line-height: 1.5;
+}
+
+.preview-meta {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    font-size: 14px;
+    color: #888;
+}
+
+.preview-topic {
+    background: #f3f4f6;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-weight: 500;
+    color: #444;
+}
+
+.preview-date {
+    color: #888;
+}
+
+/* =====================================================
+   PREVIEW BODY (Markdown content)
+   ===================================================== */
+
+.preview-body {
+    font-size: 16px;
+    line-height: 1.7;
+    color: #333;
+}
+
+.preview-body h1,
+.preview-body h2,
+.preview-body h3,
+.preview-body h4,
+.preview-body h5,
+.preview-body h6 {
+    margin: 28px 0 16px 0;
+    font-weight: 600;
+    color: #111;
+    line-height: 1.3;
+}
+
+.preview-body h1 { font-size: 28px; }
+.preview-body h2 { font-size: 24px; }
+.preview-body h3 { font-size: 20px; }
+.preview-body h4 { font-size: 18px; }
+
+.preview-body p {
+    margin: 0 0 16px 0;
+}
+
+.preview-body a {
+    color: #2563eb;
+    text-decoration: none;
+}
+
+.preview-body a:hover {
+    text-decoration: underline;
+}
+
+.preview-body img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    margin: 16px 0;
+}
+
+.preview-body ul,
+.preview-body ol {
+    margin: 0 0 16px 0;
+    padding-left: 24px;
+}
+
+.preview-body li {
+    margin: 4px 0;
+}
+
+.preview-body blockquote {
+    margin: 16px 0;
+    padding: 12px 20px;
+    border-left: 4px solid #e5e7eb;
+    background: #f9fafb;
+    color: #555;
+    font-style: italic;
+}
+
+.preview-body code {
+    background: #f3f4f6;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: "Courier New", monospace;
+    font-size: 14px;
+}
+
+.preview-body pre {
+    background: #1e1e1e;
+    color: #d4d4d4;
+    padding: 16px;
+    border-radius: 8px;
+    overflow-x: auto;
+    margin: 16px 0;
+}
+
+.preview-body pre code {
+    background: transparent;
+    padding: 0;
+    color: inherit;
+}
+
+.preview-body table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+}
+
+.preview-body th,
+.preview-body td {
+    border: 1px solid #e5e7eb;
+    padding: 8px 12px;
+    text-align: left;
+}
+
+.preview-body th {
+    background: #f9fafb;
+    font-weight: 600;
+}
+
+.preview-body hr {
+    border: 0;
+    border-top: 1px solid #e5e7eb;
+    margin: 24px 0;
+}
+
+/* Видео и слайдеры из tiptap */
+.preview-body video,
+.preview-body iframe {
+    max-width: 100%;
+    border-radius: 8px;
+    margin: 16px 0;
+}
+
+.preview-body .image-slider {
+    margin: 16px 0;
+}
+
+/* =====================================================
+   УБИРАЕМ ЗАЗОР МЕЖДУ METADATA И EDITOR
+   ===================================================== */
+
+.metadata {
+    margin-bottom: 0;
+    padding-bottom: 16px;
+}
+
+.admin-editor {
+    margin-top: 0;
+    padding-top: 0;
+}
+
+/* =====================================================
+   DRAG & DROP VISUAL FEEDBACK
+   ===================================================== */
+
+.tiptap-editor {
+    position: relative;
+    transition: background 0.2s ease;
+}
+
+.tiptap-editor.drag-over {
+    background: #f0f9ff;
+    border: 2px dashed #2563eb;
+}
+
+.tiptap-editor.drag-over::before {
+    content: "Перетащите изображение сюда";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 18px;
+    font-weight: 500;
+    color: #2563eb;
+    pointer-events: none;
+    z-index: 10;
+}
+
+/* =====================================================
+   CUSTOM IMAGE NODE (REDESIGNED)
+   ===================================================== */
+
+.image-node-view {
+    margin: 24px 0;
+    position: relative;
+}
+
+.image-node-view.align-left {
+    text-align: left;
+}
+
+.image-node-view.align-center {
+    text-align: center;
+}
+
+.image-node-view.align-right {
+    text-align: right;
+}
+
+.image-figure {
+    display: inline-block;
+    margin: 0;
+    position: relative;
+    max-width: 100%;
+}
+
+.image-figure.selected {
+    outline: 2px solid #2563eb;
+    outline-offset: 4px;
+    border-radius: 4px;
+}
+
+.image-wrapper {
+    position: relative;
+    display: inline-block;
+    max-width: 100%;
+    line-height: 0;
+}
+
+.image-wrapper img {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+/* Ручка изменения размера */
+.image-resize-handle {
+    position: absolute;
+    right: -6px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 12px;
+    height: 40px;
+    background: #2563eb;
+    border-radius: 6px;
+    cursor: ew-resize;
+    opacity: 0.9;
+    transition: opacity 0.15s ease;
+    z-index: 5;
+}
+
+.image-resize-handle:hover {
+    opacity: 1;
+    background: #1d4ed8;
+}
+
+/* Подпись */
+.image-caption {
+    margin-top: 8px;
+    font-size: 14px;
+    color: #666;
+    font-style: italic;
+    text-align: center;
+    cursor: text;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: background 0.15s ease;
+    min-height: 20px;
+}
+
+.image-caption:hover {
+    background: #f5f5f5;
+}
+
+.image-caption-input {
+    width: 100%;
+    margin-top: 8px;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+    font-style: italic;
+    text-align: center;
+    outline: none;
+    box-sizing: border-box;
+}
+
+.image-caption-input:focus {
+    border-color: #2563eb;
+}
+
+/* Панель выравнивания */
+.image-alignment-controls {
+    position: absolute;
+    top: -44px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 4px;
+    padding: 6px;
+    background: #202124;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 10;
+}
+
+.align-btn {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: white;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background 0.15s ease;
+}
+
+.align-btn:hover {
+    background: #3c4043;
+}
+
+.align-btn.active {
+    background: #2563eb;
+}
+
+/* =====================================================
+   FIGURE & FIGCAPTION IN EDITOR & PREVIEW
+   ===================================================== */
+
+/* В редакторе */
+.tiptap-editor figure {
+    margin: 24px 0;
+    padding: 0;
+}
+
+.tiptap-editor figure.align-left {
+    margin-left: 0;
+    margin-right: auto;
+}
+
+.tiptap-editor figure.align-center {
+    margin-left: auto;
+    margin-right: auto;
+    display: block;
+    text-align: center;
+}
+
+.tiptap-editor figure.align-right {
+    margin-left: auto;
+    margin-right: 0;
+}
+
+.tiptap-editor figure img {
+    margin: 0;
+}
+
+.tiptap-editor figure figcaption {
+    margin-top: 8px;
+    font-size: 14px;
+    color: #666;
+    font-style: italic;
+    text-align: center;
+}
+
+/* =====================================================
+   CUSTOM IMAGE IN PREVIEW
+   ===================================================== */
+
+.preview-body figure {
+    margin: 24px 0;
+    padding: 0;
+}
+
+.preview-body figure.align-left {
+    margin-left: 0;
+    margin-right: auto;
+}
+
+.preview-body figure.align-center {
+    margin-left: auto;
+    margin-right: auto;
+    display: block;
+    text-align: center;
+}
+
+.preview-body figure.align-right {
+    margin-left: auto;
+    margin-right: 0;
+}
+
+.preview-body figure img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    margin: 0;
+    display: block;
+}
+
+.preview-body figure figcaption {
+    margin-top: 8px;
+    font-size: 14px;
+    color: #666;
+    font-style: italic;
+    text-align: center;
+}
