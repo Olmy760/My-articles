@@ -4,11 +4,7 @@ topic: "Other"
 date: 2026-08-24
 ---
 
-![](https://raw.githubusercontent.com/Olmy760/My-articles/own_redactor/static/images/1787495828287-gjldulj2.png)<div autoplay="true" data-type="image-slider" class="article-image-slider">
-<figure data-align="center" class="image-figure align-center"><img src="https://raw.githubusercontent.com/Olmy760/My-articles/own_redactor/static/images/1787495839090-xbm9uwb7.jpg" alt="" title=""></figure><figure data-align="center" class="image-figure align-center"><img src="https://raw.githubusercontent.com/Olmy760/My-articles/own_redactor/static/images/1787495841157-9a95xi1q.png" alt="" title=""></figure>
-</div>
-
-<div data-type="video" class="article-video">
+![](https://raw.githubusercontent.com/Olmy760/My-articles/own_redactor/static/images/1787495828287-gjldulj2.png)<div data-type="video" class="article-video">
 <iframe data-src="https://www.youtube.com/watch?v=SLVHLKU4tHo" src="https://www.youtube.com/embed/SLVHLKU4tHo" frameborder="0" allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowfullscreen="true"></iframe>
 </div>
 
